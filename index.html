@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Taxi App</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: white;
+            padding: 24px 32px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            color: #1a1a1a;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #d1fae5;
+            border-radius: 20px;
+            color: #059669;
+            font-weight: 600;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 28px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+        
+        .stat-card.blue::before { background: #3b82f6; }
+        .stat-card.green::before { background: #10b981; }
+        .stat-card.purple::before { background: #8b5cf6; }
+        .stat-card.orange::before { background: #f59e0b; }
+        
+        .stat-card h3 {
+            color: #6b7280;
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-card .value {
+            font-size: 42px;
+            font-weight: 800;
+            color: #1f2937;
+            line-height: 1;
+        }
+        
+        .stat-card .label {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .section {
+            background: white;
+            padding: 28px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .section h2 {
+            color: #1f2937;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        #map {
+            height: 500px;
+            border-radius: 8px;
+            z-index: 1;
+        }
+        
+        .driver-list, .ride-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .driver-item, .ride-item {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        
+        .driver-item:hover, .ride-item:hover {
+            background: #f9fafb;
+        }
+        
+        .driver-item:last-child, .ride-item:last-child {
+            border-bottom: none;
+        }
+        
+        .driver-info, .ride-info {
+            flex: 1;
+        }
+        
+        .driver-name {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .driver-location {
+            font-size: 13px;
+            color: #6b7280;
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-available {
+            background: #d1fae5;
+            color: #059669;
+        }
+        
+        .status-occupied {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .status-disconnected {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .legend-green {
+            background: #10b981;
+        }
+        
+        .legend-red {
+            background: #ef4444;
+        }
+        
+        .legend-gray {
+            background: #6b7280;
+        }
+        
+        .legend-text {
+            font-size: 14px;
+            color: #374151;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚕 Panel de Administración - Taxi App</h1>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Sistema Activo</span>
+            </div>
+        </header>
+        
+        <div class="stats-grid">
+            <div class="stat-card blue">
+                <h3>Conductores Activos</h3>
+                <div class="value" id="activeDrivers">0</div>
+                <div class="label">En línea ahora</div>
+            </div>
+            <div class="stat-card green">
+                <h3>Conductores Totales</h3>
+                <div class="value" id="totalDrivers">0</div>
+                <div class="label">Registrados</div>
+            </div>
+            <div class="stat-card purple">
+                <h3>Viajes Activos</h3>
+                <div class="value" id="activeRides">0</div>
+                <div class="label">En curso</div>
+            </div>
+            <div class="stat-card orange">
+                <h3>Viajes Completados</h3>
+                <div class="value" id="completedRides">0</div>
+                <div class="label">Hoy</div>
+            </div>
+        </div>
+        
+        <div class="main-grid">
+            <div class="section" style="grid-column: 1 / -1;">
+                <h2>🗺 Mapa en Tiempo Real</h2>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot legend-green"></div>
+                        <span class="legend-text">Conductor Disponible</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot legend-red"></div>
+                        <span class="legend-text">Conductor Ocupado</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot legend-gray"></div>
+                        <span class="legend-text">Conductor Desconectado</span>
+                    </div>
+                </div>
+                <div id="map"></div>
+            </div>
+        </div>
+        
+        <div class="main-grid">
+            <div class="section">
+                <h2>👥 Conductores</h2>
+                <div class="driver-list" id="driverList">
+                    <div class="empty-state">Esperando conductores...</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>🚗 Viajes Activos</h2>
+                <div class="ride-list" id="rideList">
+                    <div class="empty-state">Esperando viajes...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+            databaseURL: "https://taxiapp-a333c-default-rtdb.firebaseio.com"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        let drivers = new Map();
+        let rides = new Map();
+        let driverMarkers = {};
+        let map;
+        
+        // Inicializar mapa
+        function initMap() {
+            map = L.map('map').setView([-17.7833, -63.1821], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+        
+        // Actualizar estadísticas
+        function updateStats() {
+            const activeCount = Array.from(drivers.values()).filter(d => d.status === 'available').length;
+            document.getElementById('activeDrivers').textContent = activeCount;
+            document.getElementById('totalDrivers').textContent = drivers.size;
+            document.getElementById('activeRides').textContent = rides.size;
+        }
+        
+        // Actualizar marcadores del mapa
+        function updateDriverMarkers() {
+            Object.values(driverMarkers).forEach(marker => map.removeLayer(marker));
+            driverMarkers = {};
+            
+            drivers.forEach((driver, driverId) => {
+                if (driver.location) {
+                    let iconColor, statusText;
+                    
+                    if (driver.status === 'available') {
+                        iconColor = '#10b981';
+                        statusText = 'Disponible';
+                    } else {
+                        iconColor = '#ef4444';
+                        statusText = 'Ocupado';
+                    }
+                    
+                    const customIcon = L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div style="background: ${iconColor}; width: 40px; height: 40px; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px;">🚗</div>`,
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20]
+                    });
+                    
+                    const marker = L.marker([driver.location.lat, driver.location.lng], { icon: customIcon })
+                        .addTo(map)
+                        .bindPopup(`<b>${driver.name || 'Conductor'}</b><br>Estado: ${statusText}<br>Vehículo: ${driver.vehicle || 'N/A'}<br>Placa: ${driver.licensePlate || 'N/A'}`);
+                    
+                    driverMarkers[driverId] = marker;
+                }
+            });
+            
+            const driversWithLocation = Array.from(drivers.values()).filter(d => d.location);
+            if (driversWithLocation.length > 0) {
+                const bounds = L.latLngBounds(driversWithLocation.map(d => [d.location.lat, d.location.lng]));
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+        
+        // Renderizar lista de conductores
+        function renderDrivers() {
+            const list = document.getElementById('driverList');
+            
+            if (drivers.size === 0) {
+                list.innerHTML = '<div class="empty-state">No hay conductores</div>';
+                return;
+            } else {
+                list.innerHTML = Array.from(drivers.entries()).map(([driverId, driver]) => {
+                    const statusClass = driver.status === 'available' ? 'status-available' : 'status-occupied';
+                    const statusText = driver.status === 'available' ? 'Disponible' : 'Ocupado';
+                    const statusDot = driver.status === 'available' ? '🟢' : '🔴';
+                    
+                    return `
+                    <div class="driver-item">
+                        <div class="driver-info">
+                            <div class="driver-name">${statusDot} ${driver.name || 'Conductor'}</div>
+                            <div class="driver-location">
+                                📍 ${driver.location ? driver.location.lat.toFixed(4) + ', ' + driver.location.lng.toFixed(4) : 'Sin ubicación'}
+                            </div>
+                            <div class="driver-location">
+                                🚗 ${driver.vehicle || 'N/A'} | ${driver.licensePlate || 'N/A'}
+                            </div>
+                        </div>
+                        <span class="status-badge ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </div>
+                `}).join('');
+            }
+        }
+        
+        // Renderizar lista de viajes
+        function renderRides() {
+            const list = document.getElementById('rideList');
+            
+            if (rides.size === 0) {
+                list.innerHTML = '<div class="empty-state">No hay viajes activos</div>';
+            } else {
+                list.innerHTML = Array.from(rides.entries()).map(([rideId, ride]) => {
+                    const statusText = ride.status === 'pending' ? 'Pendiente' : 
+                                      ride.status === 'accepted' ? 'Aceptado' : 
+                                      ride.status === 'arrived' ? 'Llegado' : 
+                                      ride.status === 'in_progress' ? 'En Curso' : 'Desconocido';
+                    
+                    return `
+                    <div class="ride-item">
+                        <div class="ride-info">
+                            <div class="driver-name">${ride.pickup || 'Recogida'} → ${ride.destination || 'Destino'}</div>
+                            <div class="driver-location">
+                                💰 Bs ${ride.fare || '0.00'} | 📏 ${ride.distanceKm || '0'} km
+                            </div>
+                            ${ride.driverData ? `<div class="driver-location">👨 Conductor: ${ride.driverData.name || 'N/A'}</div>` : ''}
+                        </div>
+                        <span class="status-badge status-${ride.status || 'pending'}">
+                            ${statusText}
+                        </span>
+                    </div>
+                `}).join('');
+            }
+        }
+        
+        // Escuchar cambios en conductores activos
+        database.ref('activeDrivers').on('value', (snapshot) => {
+            drivers.clear();
+            snapshot.forEach((childSnapshot) => {
+                const driverId = childSnapshot.key;
+                const driverData = childSnapshot.val();
+                drivers.set(driverId, driverData);
+            });
+            
+            renderDrivers();
+            updateDriverMarkers();
+            updateStats();
+        });
+        
+        // Escuchar cambios en viajes activos
+        database.ref('activeRides').on('value', (snapshot) => {
+            rides.clear();
+            snapshot.forEach((childSnapshot) => {
+                const rideId = childSnapshot.key;
+                const rideData = childSnapshot.val();
+                rides.set(rideId, rideData);
+            });
+            
+            renderRides();
+            updateStats();
+        });
+        
+        // Inicializar todo
+        initMap();
+    </script>
+</body>
+</html>
