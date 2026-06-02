@@ -8,6 +8,9 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -28,43 +31,107 @@
             min-height: 100vh;
         }
         
-        .container {
-            max-width: 1800px;
-            margin: 0 auto;
-            padding: 20px;
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+            padding: 24px 0;
+            z-index: 1000;
+            overflow-y: auto;
         }
         
-        header {
+        .sidebar-header {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid #374151;
+            margin-bottom: 24px;
+        }
+        
+        .sidebar-header h1 {
+            color: white;
+            font-size: 22px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .menu-item {
+            padding: 14px 24px;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+        
+        .menu-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+        
+        .menu-item.active {
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .menu-section-title {
+            padding: 16px 24px 8px;
+            color: #6b7280;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+        
+        .main-content {
+            margin-left: 280px;
+            padding: 32px;
+        }
+        
+        .page-section {
+            display: none;
+        }
+        
+        .page-section.active {
+            display: block;
+        }
+        
+        .header {
             background: white;
             padding: 24px 32px;
-            border-radius: 12px;
+            border-radius: 16px;
             margin-bottom: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         
-        h1 {
-            color: #1a1a1a;
-            font-size: 28px;
-            font-weight: 700;
+        .header h2 {
+            color: #1f2937;
+            font-size: 26px;
+            font-weight: 800;
         }
         
         .status-indicator {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
+            gap: 10px;
+            padding: 10px 20px;
             background: #d1fae5;
-            border-radius: 20px;
+            border-radius: 24px;
             color: #059669;
             font-weight: 600;
         }
         
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             background: #10b981;
             border-radius: 50%;
             animation: pulse 2s infinite;
@@ -72,23 +139,28 @@
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.4; }
         }
         
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 20px;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
         
         .stat-card {
             background: white;
             padding: 28px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             position: relative;
             overflow: hidden;
+            transition: transform 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
         }
         
         .stat-card::before {
@@ -96,7 +168,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 4px;
+            width: 5px;
             height: 100%;
         }
         
@@ -104,18 +176,20 @@
         .stat-card.green::before { background: #10b981; }
         .stat-card.purple::before { background: #8b5cf6; }
         .stat-card.orange::before { background: #f59e0b; }
+        .stat-card.red::before { background: #ef4444; }
+        .stat-card.teal::before { background: #14b8a6; }
         
         .stat-card h3 {
             color: #6b7280;
-            font-size: 14px;
+            font-size: 13px;
             text-transform: uppercase;
-            margin-bottom: 8px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
         }
         
         .stat-card .value {
-            font-size: 42px;
+            font-size: 44px;
             font-weight: 800;
             color: #1f2937;
             line-height: 1;
@@ -124,85 +198,113 @@
         .stat-card .label {
             color: #6b7280;
             font-size: 14px;
-            margin-top: 8px;
+            margin-top: 10px;
         }
         
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-        
-        @media (max-width: 1200px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
+        .stat-card .icon {
+            position: absolute;
+            right: 24px;
+            top: 24px;
+            font-size: 40px;
+            opacity: 0.15;
         }
         
         .section {
             background: white;
-            padding: 28px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 24px;
         }
         
-        .section h2 {
+        .section h3 {
             color: #1f2937;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             font-size: 20px;
-            font-weight: 700;
+            font-weight: 800;
         }
         
         #map {
-            height: 500px;
-            border-radius: 8px;
+            height: 550px;
+            border-radius: 12px;
             z-index: 1;
         }
         
-        .driver-list, .ride-list {
-            max-height: 400px;
+        .list-container {
+            max-height: 650px;
             overflow-y: auto;
         }
         
-        .driver-item, .ride-item {
-            padding: 16px;
-            border-bottom: 1px solid #f3f4f6;
+        .item-card {
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .item-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+        
+        .item-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            transition: background 0.2s;
+            align-items: flex-start;
+            margin-bottom: 12px;
         }
         
-        .driver-item:hover, .ride-item:hover {
-            background: #f9fafb;
-        }
-        
-        .driver-item:last-child, .ride-item:last-child {
-            border-bottom: none;
-        }
-        
-        .driver-info, .ride-info {
-            flex: 1;
-        }
-        
-        .driver-name {
-            font-weight: 600;
+        .item-name {
+            font-weight: 700;
             color: #1f2937;
+            font-size: 17px;
             margin-bottom: 4px;
         }
         
-        .driver-location {
+        .item-details {
             font-size: 13px;
             color: #6b7280;
+            line-height: 1.7;
         }
         
         .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
+        }
+        
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .status-approved {
+            background: #d1fae5;
+            color: #059669;
+        }
+        
+        .status-suspended {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .status-completed {
+            background: #d1fae5;
+            color: #059669;
+        }
+        
+        .status-rejected {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .status-cancelled {
+            background: #fef3c7;
+            color: #d97706;
         }
         
         .status-available {
@@ -210,35 +312,229 @@
             color: #059669;
         }
         
-        .status-occupied {
+        .status-busy {
             background: #fee2e2;
             color: #dc2626;
         }
         
-        .status-disconnected {
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-primary {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #059669;
+        }
+        
+        .btn-secondary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #d97706;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .btn-info {
+            background: #8b5cf6;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: #7c3aed;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #9ca3af;
+        }
+        
+        .empty-state-icon {
+            font-size: 60px;
+            margin-bottom: 16px;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            display: none;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal {
+            background: white;
+            padding: 36px;
+            border-radius: 20px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        
+        .modal h3 {
+            margin-bottom: 28px;
+            color: #1f2937;
+            font-size: 24px;
+            font-weight: 800;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
+            justify-content: flex-end;
+        }
+        
+        .modal-btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        
+        .modal-btn.cancel {
             background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .modal-btn.save {
+            background: #10b981;
+            color: white;
+        }
+        
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        
+        .photo-item {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        
+        .photo-item:hover {
+            border-color: #3b82f6;
+        }
+        
+        .photo-item img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+        }
+        
+        .photo-item p {
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
             color: #6b7280;
+            font-weight: 600;
         }
         
         .legend {
             display: flex;
-            gap: 20px;
-            margin-bottom: 16px;
+            gap: 24px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
         }
         
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
         
         .legend-dot {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
         
         .legend-green {
@@ -256,102 +552,880 @@
         .legend-text {
             font-size: 14px;
             color: #374151;
+            font-weight: 500;
         }
         
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #9ca3af;
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .chart-container h4 {
+            color: #1f2937;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #f3f4f6;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn:hover {
+            background: #e5e7eb;
+        }
+        
+        .tab-btn.active {
+            background: #10b981;
+            color: white;
+        }
+        
+        .ride-detail {
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .ride-detail strong {
+            color: #1f2937;
+        }
+        
+        .driver-stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .driver-info-brief {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .driver-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #10b981);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            font-weight: 800;
+        }
+        
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        
+        .settings-card {
+            background: #f9fafb;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .settings-card h4 {
+            color: #1f2937;
+            margin-bottom: 16px;
+            font-size: 16px;
+            font-weight: 700;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🚕 Panel de Administración - Taxi App</h1>
-            <div class="status-indicator">
-                <div class="status-dot"></div>
-                <span>Sistema Activo</span>
-            </div>
-        </header>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>🚕 Taxi Admin</h1>
+        </div>
         
-        <div class="stats-grid">
-            <div class="stat-card blue">
-                <h3>Conductores Activos</h3>
-                <div class="value" id="activeDrivers">0</div>
-                <div class="label">En línea ahora</div>
+        <div class="menu-section-title">Principal</div>
+        <div class="menu-item active" data-page="dashboard" onclick="showPage('dashboard')">
+            <span>📊</span> Dashboard
+        </div>
+        
+        <div class="menu-section-title">Gestión</div>
+        <div class="menu-item" data-page="map" onclick="showPage('map')">
+            <span>🗺️</span> Mapa en Tiempo Real
+        </div>
+        <div class="menu-item" data-page="drivers" onclick="showPage('drivers')">
+            <span>👨‍✈️</span> Conductores
+        </div>
+        <div class="menu-item" data-page="passengers" onclick="showPage('passengers')">
+            <span>👥</span> Clientes
+        </div>
+        <div class="menu-item" data-page="rides" onclick="showPage('rides')">
+            <span>🚗</span> Solicitudes de Carreras
+        </div>
+        <div class="menu-item" data-page="manual-ride" onclick="showPage('manual-ride')">
+            <span>📋</span> Pedir Taxi Manualmente
+        </div>
+        
+        <div class="menu-section-title">Gestión</div>
+        <div class="menu-item" data-page="notifications" onclick="showPage('notifications')">
+            <span>📢</span> Notificaciones
+        </div>
+        <div class="menu-section-title">Estadísticas</div>
+        <div class="menu-item" data-page="analytics" onclick="showPage('analytics')">
+            <span>📈</span> Análisis General
+        </div>
+        <div class="menu-item" data-page="driver-stats" onclick="showPage('driver-stats')">
+            <span>📊</span> Estadísticas por Conductor
+        </div>
+        
+        <div class="menu-section-title">Configuración</div>
+        <div class="menu-item" data-page="settings" onclick="showPage('settings')">
+            <span>⚙️</span> Configuración del Sistema
+        </div>
+        <div class="menu-item" data-page="app-versions" onclick="showPage('app-versions')">
+            <span>📱</span> Versiones de la App
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <!-- Dashboard -->
+        <div class="page-section active" id="page-dashboard">
+            <div class="header">
+                <h2>📊 Dashboard</h2>
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>Sistema Activo</span>
+                </div>
             </div>
-            <div class="stat-card green">
-                <h3>Conductores Totales</h3>
-                <div class="value" id="totalDrivers">0</div>
-                <div class="label">Registrados</div>
+            
+            <div class="stats-grid">
+                <div class="stat-card blue">
+                    <span class="icon">👨‍✈️</span>
+                    <h3>Conductores Activos</h3>
+                    <div class="value" id="activeDrivers">0</div>
+                    <div class="label">En línea ahora</div>
+                </div>
+                <div class="stat-card green">
+                    <span class="icon">✅</span>
+                    <h3>Conductores Aprobados</h3>
+                    <div class="value" id="approvedDrivers">0</div>
+                    <div class="label">Registrados y aprobados</div>
+                </div>
+                <div class="stat-card orange">
+                    <span class="icon">⏳</span>
+                    <h3>Conductores Pendientes</h3>
+                    <div class="value" id="pendingDrivers">0</div>
+                    <div class="label">Esperando aprobación</div>
+                </div>
+                <div class="stat-card red">
+                    <span class="icon">🚫</span>
+                    <h3>Conductores Suspendidos</h3>
+                    <div class="value" id="suspendedDrivers">0</div>
+                    <div class="label">No pueden conectarse</div>
+                </div>
+                <div class="stat-card purple">
+                    <span class="icon">🚗</span>
+                    <h3>Viajes Activos</h3>
+                    <div class="value" id="activeRides">0</div>
+                    <div class="label">En curso</div>
+                </div>
+                <div class="stat-card teal">
+                    <span class="icon">👥</span>
+                    <h3>Clientes</h3>
+                    <div class="value" id="totalPassengers">0</div>
+                    <div class="label">Registrados</div>
+                </div>
             </div>
-            <div class="stat-card purple">
-                <h3>Viajes Activos</h3>
-                <div class="value" id="activeRides">0</div>
-                <div class="label">En curso</div>
-            </div>
-            <div class="stat-card orange">
-                <h3>Viajes Completados</h3>
-                <div class="value" id="completedRides">0</div>
-                <div class="label">Hoy</div>
+            
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h4>Viajes por Estado</h4>
+                    <canvas id="ridesStatusChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h4>Conductores por Estado</h4>
+                    <canvas id="driversStatusChart"></canvas>
+                </div>
             </div>
         </div>
         
-        <div class="main-grid">
-            <div class="section" style="grid-column: 1 / -1;">
-                <h2>🗺 Mapa en Tiempo Real</h2>
+        <!-- Mapa -->
+        <div class="page-section" id="page-map">
+            <div class="header">
+                <h2>🗺️ Mapa en Tiempo Real</h2>
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>Actualización en vivo</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Conductores en el Mapa</h3>
                 <div class="legend">
                     <div class="legend-item">
                         <div class="legend-dot legend-green"></div>
-                        <span class="legend-text">Conductor Disponible</span>
+                        <span class="legend-text">Disponible</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-dot legend-red"></div>
-                        <span class="legend-text">Conductor Ocupado</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot legend-gray"></div>
-                        <span class="legend-text">Conductor Desconectado</span>
+                        <span class="legend-text">Ocupado</span>
                     </div>
                 </div>
                 <div id="map"></div>
             </div>
         </div>
         
-        <div class="main-grid">
+        <!-- Conductores -->
+        <div class="page-section" id="page-drivers">
+            <div class="header">
+                <h2>👨‍✈️ Gestión de Conductores</h2>
+            </div>
+            
             <div class="section">
-                <h2>👥 Conductores</h2>
-                <div class="driver-list" id="driverList">
-                    <div class="empty-state">Esperando conductores...</div>
+                <div class="tabs">
+                    <button class="tab-btn active" data-driver-tab="all" onclick="filterDrivers('all')">Todos</button>
+                    <button class="tab-btn" data-driver-tab="pending" onclick="filterDrivers('pending')">Pendientes</button>
+                    <button class="tab-btn" data-driver-tab="approved" onclick="filterDrivers('approved')">Aprobados</button>
+                    <button class="tab-btn" data-driver-tab="suspended" onclick="filterDrivers('suspended')">Suspendidos</button>
+                </div>
+                
+                <div class="list-container" id="driverList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👨‍✈️</div>
+                        <p>Cargando conductores...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Clientes -->
+        <div class="page-section" id="page-passengers">
+            <div class="header">
+                <h2>👥 Gestión de Clientes</h2>
+            </div>
+            
+            <div class="section">
+                <div class="tabs">
+                    <button class="tab-btn active" data-passenger-tab="all" onclick="filterPassengers('all')">Todos</button>
+                    <button class="tab-btn" data-passenger-tab="pending" onclick="filterPassengers('pending')">Pendientes</button>
+                    <button class="tab-btn" data-passenger-tab="approved" onclick="filterPassengers('approved')">Aprobados</button>
+                </div>
+                
+                <div class="list-container" id="passengerList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <p>Cargando clientes...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rides -->
+        <div class="page-section" id="page-rides">
+            <div class="header">
+                <h2>🚗 Historial de Solicitudes</h2>
+            </div>
+            
+            <div class="section">
+                <div class="tabs">
+                    <button class="tab-btn active" data-ride-tab="all" onclick="filterRides('all')">Todos</button>
+                    <button class="tab-btn" data-ride-tab="completed" onclick="filterRides('completed')">Completados</button>
+                    <button class="tab-btn" data-ride-tab="cancelled" onclick="filterRides('cancelled')">Cancelados</button>
+                    <button class="tab-btn" data-ride-tab="rejected" onclick="filterRides('rejected')">Rechazados</button>
+                </div>
+                
+                <div class="list-container" id="ridesList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🚗</div>
+                        <p>Cargando solicitudes...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Ride Request -->
+        <div class="page-section" id="page-manual-ride">
+            <div class="header">
+                <h2>📋 Pedir Taxi Manualmente</h2>
+            </div>
+            
+            <div class="section">
+                <h3>Mapa para Seleccionar Puntos</h3>
+                <div id="manualRideMap" style="height: 500px; border-radius: 12px; margin-bottom: 24px;"></div>
+                
+                <div class="tabs" style="margin-bottom: 24px;">
+                    <button class="tab-btn active" id="selectPickupBtn" onclick="setMapMode('pickup')">📍 Seleccionar Recogida</button>
+                    <button class="tab-btn" id="selectDestBtn" onclick="setMapMode('destination')">🏁 Seleccionar Destino</button>
                 </div>
             </div>
             
             <div class="section">
-                <h2>🚗 Viajes Activos</h2>
-                <div class="ride-list" id="rideList">
-                    <div class="empty-state">Esperando viajes...</div>
+                <h3>Datos del Viaje</h3>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label>Nombre del Pasajero</label>
+                            <input type="text" id="manualPassengerName" placeholder="Nombre del pasajero">
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono del Pasajero</label>
+                            <input type="text" id="manualPassengerPhone" placeholder="Teléfono del pasajero">
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label>Ubicación de Recogida</label>
+                            <input type="text" id="manualPickup" placeholder="Dirección de recogida">
+                        </div>
+                        <div class="form-group">
+                            <label>Latitud Recogida</label>
+                            <input type="number" step="any" id="manualPickupLat" placeholder="-17.7833">
+                        </div>
+                        <div class="form-group">
+                            <label>Longitud Recogida</label>
+                            <input type="number" step="any" id="manualPickupLng" placeholder="-63.1821">
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label>Destino</label>
+                            <input type="text" id="manualDestination" placeholder="Dirección de destino">
+                        </div>
+                        <div class="form-group">
+                            <label>Latitud Destino</label>
+                            <input type="number" step="any" id="manualDestLat" placeholder="-17.7833">
+                        </div>
+                        <div class="form-group">
+                            <label>Longitud Destino</label>
+                            <input type="number" step="any" id="manualDestLng" placeholder="-63.1821">
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label>Distancia Calculada (km)</label>
+                            <input type="number" step="0.1" id="manualDistance" placeholder="Distancia en km" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa Calculada (Bs)</label>
+                            <input type="number" step="0.5" id="manualFare" placeholder="Tarifa del viaje" readonly>
+                        </div>
+                    </div>
                 </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+                    <button class="btn btn-primary" onclick="requestManualRide()">🚗 Enviar Solicitud</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notificaciones -->
+        <div class="page-section" id="page-notifications">
+            <div class="header">
+                <h2>📢 Enviar Notificaciones</h2>
+            </div>
+            
+            <div class="section">
+                <div class="tabs" style="margin-bottom: 24px;">
+                    <button class="tab-btn active" id="sendToDriversTab" onclick="setNotificationTab('drivers')">👨‍✈️ Enviar a Conductores</button>
+                    <button class="tab-btn" id="sendToPassengersTab" onclick="setNotificationTab('passengers')">👥 Enviar a Pasajeros</button>
+                    <button class="tab-btn" id="sendToAllTab" onclick="setNotificationTab('all')">🌐 Enviar a Todos</button>
+                </div>
+                
+                <div class="settings-grid" style="grid-template-columns: 1fr;">
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label>Título de la Notificación</label>
+                            <input type="text" id="notificationTitle" placeholder="Ej: Aviso Importante">
+                        </div>
+                        <div class="form-group">
+                            <label>Mensaje</label>
+                            <textarea id="notificationMessage" rows="5" placeholder="Escribe el mensaje que quieres enviar..."></textarea>
+                        </div>
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <button class="btn btn-primary" onclick="sendNotification()">📢 Enviar Notificación</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 32px;">Historial de Notificaciones</h3>
+                <div class="list-container" id="notificationsList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📢</div>
+                        <p>No hay notificaciones enviadas aún</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analytics -->
+        <div class="page-section" id="page-analytics">
+            <div class="header">
+                <h2>📈 Análisis General</h2>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card green">
+                    <span class="icon">✅</span>
+                    <h3>Viajes Completados</h3>
+                    <div class="value" id="totalCompletedRides">0</div>
+                    <div class="label">Total histórico</div>
+                </div>
+                <div class="stat-card red">
+                    <span class="icon">❌</span>
+                    <h3>Viajes Cancelados</h3>
+                    <div class="value" id="totalCancelledRides">0</div>
+                    <div class="label">Total histórico</div>
+                </div>
+                <div class="stat-card orange">
+                    <span class="icon">🚫</span>
+                    <h3>Viajes Rechazados</h3>
+                    <div class="value" id="totalRejectedRides">0</div>
+                    <div class="label">Total histórico</div>
+                </div>
+                <div class="stat-card teal">
+                    <span class="icon">💰</span>
+                    <h3>Ingresos Totales</h3>
+                    <div class="value" id="totalEarnings">0</div>
+                    <div class="label">Bs</div>
+                </div>
+            </div>
+            
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h4>Distribución de Estados de Viajes</h4>
+                    <canvas id="ridesDistributionChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h4>Top Conductores</h4>
+                    <canvas id="topDriversChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Driver Stats -->
+        <div class="page-section" id="page-driver-stats">
+            <div class="header">
+                <h2>📊 Estadísticas por Conductor</h2>
+            </div>
+            
+            <div class="section" id="driverStatsSection">
+                <h3>Selecciona un conductor para ver sus estadísticas</h3>
+                <div class="list-container" id="driverStatsList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <p>Cargando conductores...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section" id="driverDetailSection" style="display: none;">
+                <div class="driver-stats-header">
+                    <div class="driver-info-brief">
+                        <div class="driver-avatar" id="selectedDriverAvatar">👨</div>
+                        <div>
+                            <h3 id="selectedDriverName">Nombre del Conductor</h3>
+                            <p id="selectedDriverVehicle" style="color: #6b7280; margin-top: 4px;">Vehículo</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="closeDriverDetail()">← Volver</button>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card green">
+                        <span class="icon">✅</span>
+                        <h3>Viajes Completados</h3>
+                        <div class="value" id="driverCompletedRides">0</div>
+                    </div>
+                    <div class="stat-card red">
+                        <span class="icon">❌</span>
+                        <h3>Viajes Cancelados</h3>
+                        <div class="value" id="driverCancelledRides">0</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <span class="icon">🚫</span>
+                        <h3>Viajes Rechazados</h3>
+                        <div class="value" id="driverRejectedRides">0</div>
+                    </div>
+                    <div class="stat-card teal">
+                        <span class="icon">💰</span>
+                        <h3>Ingresos</h3>
+                        <div class="value" id="driverEarnings">0</div>
+                        <div class="label">Bs</div>
+                    </div>
+                </div>
+                
+                <div class="charts-grid" style="margin-top: 24px;">
+                    <div class="chart-container">
+                        <h4>Desempeño del Conductor</h4>
+                        <canvas id="driverPerformanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings -->
+        <div class="page-section" id="page-settings">
+            <div class="header">
+                <h2>⚙️ Configuración del Sistema</h2>
+            </div>
+            
+            <div class="section">
+                <h3>Tarifas</h3>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h4>Tarifa Básica</h4>
+                        <div class="form-group">
+                            <label>Tarifa Mínima (Bs)</label>
+                            <input type="number" id="minFare" value="10" step="0.5">
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <h4>Tarifa por Kilómetro</h4>
+                        <div class="form-group">
+                            <label>Tarifa Día (Bs/km)</label>
+                            <input type="number" id="dayRatePerKm" value="3" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa Noche (Bs/km)</label>
+                            <input type="number" id="nightRatePerKm" value="4" step="0.5">
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <h4>Tarifa por Minuto</h4>
+                        <div class="form-group">
+                            <label>Tarifa Día (Bs/min)</label>
+                            <input type="number" id="dayRatePerMin" value="0.5" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa Noche (Bs/min)</label>
+                            <input type="number" id="nightRatePerMin" value="0.7" step="0.1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Tarifas Especiales</h3>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h4>Horario Nocturno</h4>
+                        <div class="form-group">
+                            <label>Inicio (ej: 21:00)</label>
+                            <input type="time" id="nightStartTime" value="21:00">
+                        </div>
+                        <div class="form-group">
+                            <label>Fin (ej: 06:00)</label>
+                            <input type="time" id="nightEndTime" value="06:00">
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <h4>Tarifa Especial (Eventos)</h4>
+                        <div class="form-group">
+                            <label>Multiplicador (ej: 1.5 = 50% extra)</label>
+                            <input type="number" id="specialMultiplier" value="1.5" step="0.1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Comisiones</h3>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h4>Comisión por Carrera</h4>
+                        <div class="form-group">
+                            <label>Porcentaje de Comisión (%)</label>
+                            <input type="number" id="commissionPercentage" value="15" step="1" min="0" max="100">
+                        </div>
+                        <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">Ejemplo: 15% significa que la empresa se queda con el 15% de cada carrera</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Regiones</h3>
+                <div class="form-group">
+                    <label>Agregar Nueva Región</label>
+                    <input type="text" id="newRegionName" placeholder="Nombre de la región (ej: Montero)">
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="addRegion()">➕ Agregar Región</button>
+                <div class="list-container" id="regionsList" style="margin-top: 16px;"></div>
+            </div>
+            
+            <div class="section">
+                <h3>Tarifas Especiales por Destino</h3>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label>Nombre del Destino</label>
+                            <input type="text" id="specialDestName" placeholder="Ej: Aeropuerto Viru Viru">
+                        </div>
+                        <div class="form-group">
+                            <label>Latitud del Destino</label>
+                            <input type="number" step="any" id="specialDestLat" placeholder="-17.6394">
+                        </div>
+                        <div class="form-group">
+                            <label>Longitud del Destino</label>
+                            <input type="number" step="any" id="specialDestLng" placeholder="-63.2350">
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa Adicional (Bs)</label>
+                            <input type="number" step="0.5" id="specialDestExtraFare" placeholder="Ej: 20">
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="addSpecialDestination()">➕ Agregar Tarifa Especial</button>
+                    </div>
+                </div>
+                <div class="list-container" id="specialDestinationsList" style="margin-top: 16px;"></div>
+            </div>
+            
+            <div class="section">
+                <h3>Tarifas Especiales por Rutas</h3>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label>Origen</label>
+                            <input type="text" id="specialRouteOrigin" placeholder="Origen (ej: Santa Cruz)">
+                        </div>
+                        <div class="form-group">
+                            <label>Destino</label>
+                            <input type="text" id="specialRouteDestination" placeholder="Destino (ej: Montero)">
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa Fija (Bs)</label>
+                            <input type="number" id="specialRouteFare" step="0.5" placeholder="Ej: 50">
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="addSpecialRoute()">➕ Agregar Tarifa Especial</button>
+                    </div>
+                </div>
+                <div class="list-container" id="specialRoutesList" style="margin-top: 16px;"></div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end;">
+                <button class="btn btn-primary" onclick="saveSystemSettings()">💾 Guardar Configuración</button>
+            </div>
+        </div>
+        
+        <!-- App Versions -->
+        <div class="page-section" id="page-app-versions">
+            <div class="header">
+                <h2>📱 Versiones de la App</h2>
+            </div>
+            
+            <div class="section">
+                <h3>App Pasajeros</h3>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label>Versión Actual</label>
+                            <input type="text" id="passengerAppVersion" placeholder="Ej: 1.0.0">
+                        </div>
+                        <div class="form-group">
+                            <label>Enlace de Descarga</label>
+                            <input type="text" id="passengerDownloadUrl" placeholder="URL del APK (Google Drive, Firebase Storage, etc.)">
+                        </div>
+                        <div class="form-group">
+                            <label>Notas de la Actualización</label>
+                            <textarea id="passengerReleaseNotes" placeholder="Qué hay de nuevo en esta versión..." rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="passengerForceUpdate"> Forzar actualización (los usuarios no podrán usar la app sin actualizar)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>App Conductores</h3>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label>Versión Actual</label>
+                            <input type="text" id="driverAppVersion" placeholder="Ej: 1.0.0">
+                        </div>
+                        <div class="form-group">
+                            <label>Enlace de Descarga</label>
+                            <input type="text" id="driverDownloadUrl" placeholder="URL del APK">
+                        </div>
+                        <div class="form-group">
+                            <label>Notas de la Actualización</label>
+                            <textarea id="driverReleaseNotes" placeholder="Qué hay de nuevo en esta versión..." rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="driverForceUpdate"> Forzar actualización (los conductores no podrán usar la app sin actualizar)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end;">
+                <button class="btn btn-primary" onclick="saveAppVersions()">💾 Guardar Versiones</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Driver Modal -->
+    <div class="modal-overlay" id="editDriverModal">
+        <div class="modal">
+            <h3>✏️ Editar Conductor</h3>
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" id="editDriverName">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="editDriverEmail">
+            </div>
+            <div class="form-group">
+                <label>Teléfono</label>
+                <input type="text" id="editDriverPhone">
+            </div>
+            <div class="form-group">
+                <label>Vehículo</label>
+                <input type="text" id="editDriverVehicle">
+            </div>
+            <div class="form-group">
+                <label>Placa</label>
+                <input type="text" id="editDriverLicensePlate">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeEditDriverModal()">Cancelar</button>
+                <button class="modal-btn save" onclick="saveDriverEdit()">Guardar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Photos Modal -->
+    <div class="modal-overlay" id="photosModal">
+        <div class="modal" style="max-width: 900px;">
+            <h3>📷 Fotos del Conductor</h3>
+            <div class="form-group" style="margin-bottom: 8px;">
+                <label>Foto de Perfil</label>
+                <input type="file" id="editProfilePhoto" accept="image/*" style="margin-bottom: 8px;">
+                <img id="profilePhotoPreview" style="max-width: 200px; max-height: 200px; border-radius: 8px; display: none;">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div class="form-group" style="margin: 0;">
+                    <label>Licencia de Conducir - Anverso</label>
+                    <input type="file" id="editLicenseFront" accept="image/*" style="margin-bottom: 8px;">
+                    <img id="licenseFrontPreview" style="max-width: 100%; border-radius: 8px; display: none;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label>Licencia de Conducir - Reverso</label>
+                    <input type="file" id="editLicenseBack" accept="image/*" style="margin-bottom: 8px;">
+                    <img id="licenseBackPreview" style="max-width: 100%; border-radius: 8px; display: none;">
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div class="form-group" style="margin: 0;">
+                    <label>Carnet de Identidad - Anverso</label>
+                    <input type="file" id="editIdFront" accept="image/*" style="margin-bottom: 8px;">
+                    <img id="idFrontPreview" style="max-width: 100%; border-radius: 8px; display: none;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label>Carnet de Identidad - Reverso</label>
+                    <input type="file" id="editIdBack" accept="image/*" style="margin-bottom: 8px;">
+                    <img id="idBackPreview" style="max-width: 100%; border-radius: 8px; display: none;">
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closePhotosModal()">Cancelar</button>
+                <button class="modal-btn save" onclick="saveDriverPhotos()">💾 Guardar Fotos</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Passenger Modal -->
+    <div class="modal-overlay" id="editPassengerModal">
+        <div class="modal">
+            <h3>✏️ Editar Cliente</h3>
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" id="editPassengerName">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="editPassengerEmail">
+            </div>
+            <div class="form-group">
+                <label>Teléfono</label>
+                <input type="text" id="editPassengerPhone">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeEditPassengerModal()">Cancelar</button>
+                <button class="modal-btn save" onclick="savePassengerEdit()">Guardar</button>
             </div>
         </div>
     </div>
     
     <script>
-        // Configuración de Firebase
         const firebaseConfig = {
             databaseURL: "https://taxiapp-a333c-default-rtdb.firebaseio.com"
         };
         
-        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         
-        let drivers = new Map();
-        let rides = new Map();
+        let allDrivers = new Map();
+        let activeDrivers = new Map();
+        let allPassengers = new Map();
+        let activeRides = new Map();
+        let completedRides = new Map();
         let driverMarkers = {};
         let map;
+        let manualRideMap;
+        let currentDriverTab = 'all';
+        let currentPassengerTab = 'all';
+        let currentRideTab = 'all';
+        let editingDriverId = null;
+        let editingPassengerId = null;
+        let selectedDriverId = null;
+        let regions = [];
+        let specialRoutes = [];
+        let specialDestinations = [];
+        let mapMode = 'pickup'; // 'pickup' or 'destination'
+        let pickupMarker = null;
+        let destMarker = null;
+        let routeLine = null;
+        let systemSettings = null;
+        let currentNotificationTab = 'drivers';
+        let notifications = new Map();
         
-        // Inicializar mapa
+        let ridesStatusChart, driversStatusChart, ridesDistributionChart, topDriversChart, driverPerformanceChart;
+        
         function initMap() {
             map = L.map('map').setView([-17.7833, -63.1821], 13);
             
@@ -360,23 +1434,705 @@
             }).addTo(map);
         }
         
-        // Actualizar estadísticas
-        function updateStats() {
-            const activeCount = Array.from(drivers.values()).filter(d => d.status === 'available').length;
-            document.getElementById('activeDrivers').textContent = activeCount;
-            document.getElementById('totalDrivers').textContent = drivers.size;
-            document.getElementById('activeRides').textContent = rides.size;
+        function showPage(pageId) {
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            
+            document.getElementById('page-' + pageId).classList.add('active');
+            document.querySelector('.menu-item[data-page="' + pageId + '"]').classList.add('active');
+            
+            if (pageId === 'map' && map) {
+                setTimeout(() => map.invalidateSize(), 100);
+            } else if (pageId === 'settings') {
+                loadSystemSettings();
+            } else if (pageId === 'manual-ride') {
+                initManualRideMap();
+            } else if (pageId === 'app-versions') {
+                loadAppVersions();
+            } else if (pageId === 'notifications') {
+                loadNotifications();
+            }
         }
         
-        // Actualizar marcadores del mapa
+        function loadAppVersions() {
+            database.ref('appVersions').once('value', (snapshot) => {
+                const versions = snapshot.val() || {};
+                document.getElementById('passengerAppVersion').value = versions.passenger?.version || '';
+                document.getElementById('passengerDownloadUrl').value = versions.passenger?.downloadUrl || '';
+                document.getElementById('passengerReleaseNotes').value = versions.passenger?.releaseNotes || '';
+                document.getElementById('passengerForceUpdate').checked = versions.passenger?.forceUpdate || false;
+                document.getElementById('driverAppVersion').value = versions.driver?.version || '';
+                document.getElementById('driverDownloadUrl').value = versions.driver?.downloadUrl || '';
+                document.getElementById('driverReleaseNotes').value = versions.driver?.releaseNotes || '';
+                document.getElementById('driverForceUpdate').checked = versions.driver?.forceUpdate || false;
+            });
+        }
+        
+        function saveAppVersions() {
+            const versions = {
+                passenger: {
+                    version: document.getElementById('passengerAppVersion').value,
+                    downloadUrl: document.getElementById('passengerDownloadUrl').value,
+                    releaseNotes: document.getElementById('passengerReleaseNotes').value,
+                    forceUpdate: document.getElementById('passengerForceUpdate').checked,
+                    updatedAt: Date.now()
+                },
+                driver: {
+                    version: document.getElementById('driverAppVersion').value,
+                    downloadUrl: document.getElementById('driverDownloadUrl').value,
+                    releaseNotes: document.getElementById('driverReleaseNotes').value,
+                    forceUpdate: document.getElementById('driverForceUpdate').checked,
+                    updatedAt: Date.now()
+                }
+            };
+            
+            database.ref('appVersions').set(versions)
+                .then(() => {
+                    alert('✅ Versiones guardadas exitosamente! Los usuarios recibirán notificación de actualización.');
+                })
+                .catch(error => {
+                    alert('❌ Error al guardar: ' + error.message);
+                });
+        }
+        
+        function setNotificationTab(tab) {
+            currentNotificationTab = tab;
+            document.querySelectorAll('[id$="Tab"]').forEach(b => b.classList.remove('active'));
+            document.getElementById('sendTo' + tab.charAt(0).toUpperCase() + tab.slice(1) + 'Tab').classList.add('active');
+        }
+        
+        function sendNotification() {
+            const title = document.getElementById('notificationTitle').value.trim();
+            const message = document.getElementById('notificationMessage').value.trim();
+            
+            if (!title || !message) {
+                alert('⚠️ Por favor complete el título y el mensaje');
+                return;
+            }
+            
+            const notificationId = Date.now().toString();
+            const notification = {
+                id: notificationId,
+                title: title,
+                message: message,
+                target: currentNotificationTab,
+                createdAt: Date.now(),
+                sentBy: 'admin'
+            };
+            
+            // Guardar en historial de notificaciones
+            database.ref('notifications/' + notificationId).set(notification)
+                .then(() => {
+                    // Enviar notificación a conductores o pasajeros
+                    if (currentNotificationTab === 'drivers' || currentNotificationTab === 'all') {
+                        sendNotificationToGroup('drivers', notification);
+                    }
+                    if (currentNotificationTab === 'passengers' || currentNotificationTab === 'all') {
+                        sendNotificationToGroup('passengers', notification);
+                    }
+                    
+                    alert('✅ Notificación enviada exitosamente!');
+                    
+                    // Limpiar formulario
+                    document.getElementById('notificationTitle').value = '';
+                    document.getElementById('notificationMessage').value = '';
+                    
+                    // Recargar lista
+                    loadNotifications();
+                })
+                .catch(error => {
+                    alert('❌ Error al enviar: ' + error.message);
+                });
+        }
+        
+        function sendNotificationToGroup(group, notification) {
+            const ref = database.ref(group);
+            ref.once('value', (snapshot) => {
+                snapshot.forEach((child) => {
+                    const userId = child.key;
+                    // Añadir notificación al nodo de notificaciones del usuario
+                    const userNotificationRef = database.ref(group + '/' + userId + '/notifications').push();
+                    userNotificationRef.set({
+                        title: notification.title,
+                        message: notification.message,
+                        createdAt: notification.createdAt,
+                        read: false
+                    });
+                });
+            });
+        }
+        
+        function loadNotifications() {
+            database.ref('notifications').orderByChild('createdAt').limitToLast(50).on('value', (snapshot) => {
+                notifications.clear();
+                const listElement = document.getElementById('notificationsList');
+                
+                if (!snapshot.exists()) {
+                    listElement.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📢</div>
+                            <p>No hay notificaciones enviadas aún</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const items = [];
+                snapshot.forEach((child) => {
+                    const notif = child.val();
+                    notifications.set(child.key, notif);
+                    
+                    const targetLabel = notif.target === 'drivers' ? '👨‍✈️ Conductores' : 
+                                        notif.target === 'passengers' ? '👥 Pasajeros' : '🌐 Todos';
+                    
+                    items.unshift(`
+                        <div class="item-card">
+                            <div class="item-header">
+                                <div class="item-info">
+                                    <div class="item-name">${notif.title}</div>
+                                    <div class="item-details">
+                                        ${targetLabel}<br>
+                                        <small>${new Date(notif.createdAt).toLocaleDateString('es-ES', { dateStyle: 'long', timeStyle: 'short' })}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 12px; padding: 12px; background-color: #f3f4f6; border-radius: 8px;">
+                                ${notif.message}
+                            </div>
+                        </div>
+                    `);
+                });
+                
+                listElement.innerHTML = items.join('');
+            });
+        }
+        
+        function initManualRideMap() {
+            if (manualRideMap) {
+                manualRideMap.remove();
+            }
+            manualRideMap = L.map('manualRideMap').setView([-17.7833, -63.1821], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(manualRideMap);
+            
+            manualRideMap.on('click', function(e) {
+                handleMapClick(e.latlng);
+            });
+        }
+        
+        function setMapMode(mode) {
+            mapMode = mode;
+            document.getElementById('selectPickupBtn').classList.toggle('active', mode === 'pickup');
+            document.getElementById('selectDestBtn').classList.toggle('active', mode === 'destination');
+        }
+        
+        function handleMapClick(latlng) {
+            if (mapMode === 'pickup') {
+                if (pickupMarker) {
+                    manualRideMap.removeLayer(pickupMarker);
+                }
+                pickupMarker = L.marker(latlng, { icon: createCustomMarkerIcon('#10b981', '📍') })
+                    .addTo(manualRideMap)
+                    .bindPopup('Punto de Recogida');
+                document.getElementById('manualPickupLat').value = latlng.lat.toFixed(6);
+                document.getElementById('manualPickupLng').value = latlng.lng.toFixed(6);
+                getAddressFromCoords(latlng.lat, latlng.lng, 'manualPickup');
+            } else {
+                if (destMarker) {
+                    manualRideMap.removeLayer(destMarker);
+                }
+                destMarker = L.marker(latlng, { icon: createCustomMarkerIcon('#ef4444', '🏁') })
+                    .addTo(manualRideMap)
+                    .bindPopup('Destino');
+                document.getElementById('manualDestLat').value = latlng.lat.toFixed(6);
+                document.getElementById('manualDestLng').value = latlng.lng.toFixed(6);
+                getAddressFromCoords(latlng.lat, latlng.lng, 'manualDestination');
+            }
+            calculateDistanceAndFare();
+        }
+        
+        function createCustomMarkerIcon(color, emoji) {
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background: ${color}; width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px;">${emoji}</div>`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+        }
+        
+        function getAddressFromCoords(lat, lng, fieldId) {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.display_name) {
+                        document.getElementById(fieldId).value = data.display_name;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error getting address:', error);
+                });
+        }
+        
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const earthRadius = 6371;
+            const dLat = toRadians(lat2 - lat1);
+            const dLng = toRadians(lng2 - lng1);
+            const a = 
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * 
+                Math.sin(dLng / 2) * Math.sin(dLng / 2); 
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+            return earthRadius * c;
+        }
+        
+        function toRadians(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+        
+        function calculateDistanceAndFare() {
+            const pickupLat = parseFloat(document.getElementById('manualPickupLat').value);
+            const pickupLng = parseFloat(document.getElementById('manualPickupLng').value);
+            const destLat = parseFloat(document.getElementById('manualDestLat').value);
+            const destLng = parseFloat(document.getElementById('manualDestLng').value);
+            
+            if (!isNaN(pickupLat) && !isNaN(pickupLng) && !isNaN(destLat) && !isNaN(destLng)) {
+                const distance = calculateDistance(pickupLat, pickupLng, destLat, destLng);
+                document.getElementById('manualDistance').value = distance.toFixed(1);
+                
+                if (systemSettings) {
+                    const minFare = systemSettings.minFare || 10;
+                    const dayRatePerKm = systemSettings.dayRatePerKm || 3;
+                    let fare = Math.max(distance * dayRatePerKm, minFare);
+                    
+                    let specialDestApplied = false;
+                    specialDestinations.forEach(dest => {
+                        const destLat2 = dest.lat;
+                        const destLng2 = dest.lng;
+                        const distToDest = calculateDistance(destLat, destLng, destLat2, destLng2);
+                        if (distToDest <= 2.0) {
+                            fare += (dest.extraFare || 0);
+                            specialDestApplied = true;
+                        }
+                    });
+                    
+                    document.getElementById('manualFare').value = fare.toFixed(1);
+                }
+                
+                if (routeLine) {
+                    manualRideMap.removeLayer(routeLine);
+                }
+                routeLine = L.polyline([[pickupLat, pickupLng], [destLat, destLng]], {
+                    color: '#10b981',
+                    weight: 5
+                }).addTo(manualRideMap);
+                
+                const bounds = L.latLngBounds([[pickupLat, pickupLng], [destLat, destLng]]);
+                manualRideMap.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+        
+        function loadSystemSettings() {
+            database.ref('systemSettings').once('value', (snapshot) => {
+                systemSettings = snapshot.val() || {};
+                document.getElementById('minFare').value = systemSettings.minFare || 10;
+                document.getElementById('dayRatePerKm').value = systemSettings.dayRatePerKm || 3;
+                document.getElementById('nightRatePerKm').value = systemSettings.nightRatePerKm || 4;
+                document.getElementById('dayRatePerMin').value = systemSettings.dayRatePerMin || 0.5;
+                document.getElementById('nightRatePerMin').value = systemSettings.nightRatePerMin || 0.7;
+                document.getElementById('nightStartTime').value = systemSettings.nightStartTime || '21:00';
+                document.getElementById('nightEndTime').value = systemSettings.nightEndTime || '06:00';
+                document.getElementById('specialMultiplier').value = systemSettings.specialMultiplier || 1.5;
+                document.getElementById('commissionPercentage').value = systemSettings.commissionPercentage || 15;
+                regions = systemSettings.regions || [];
+                specialRoutes = systemSettings.specialRoutes || [];
+                specialDestinations = systemSettings.specialDestinations || [];
+                renderRegions();
+                renderSpecialRoutes();
+                renderSpecialDestinations();
+            });
+        }
+        
+        function addSpecialDestination() {
+            const name = document.getElementById('specialDestName').value.trim();
+            const lat = parseFloat(document.getElementById('specialDestLat').value);
+            const lng = parseFloat(document.getElementById('specialDestLng').value);
+            const extraFare = parseFloat(document.getElementById('specialDestExtraFare').value);
+            if (name && !isNaN(lat) && !isNaN(lng) && !isNaN(extraFare)) {
+                specialDestinations.push({ id: Date.now(), name, lat, lng, extraFare });
+                document.getElementById('specialDestName').value = '';
+                document.getElementById('specialDestLat').value = '';
+                document.getElementById('specialDestLng').value = '';
+                document.getElementById('specialDestExtraFare').value = '';
+                renderSpecialDestinations();
+                alert('✅ Tarifa especial por destino agregada!');
+            }
+        }
+        
+        function deleteSpecialDestination(destId) {
+            if (confirm('¿Eliminar esta tarifa especial?')) {
+                specialDestinations = specialDestinations.filter(d => d.id !== destId);
+                renderSpecialDestinations();
+            }
+        }
+        
+        function renderSpecialDestinations() {
+            const list = document.getElementById('specialDestinationsList');
+            if (specialDestinations.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding: 20px;"><p>No hay tarifas especiales por destino agregadas</p></div>';
+                return;
+            }
+            list.innerHTML = specialDestinations.map(dest => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-info">
+                            <div class="item-name">${dest.name}</div>
+                            <div class="item-details">
+                                📍 Ubicación: (${dest.lat.toFixed(4)}, ${dest.lng.toFixed(4)})<br>
+                                💰 Tarifa adicional: Bs ${dest.extraFare}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-danger btn-sm" onclick="deleteSpecialDestination(${dest.id})">🗑️ Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function addRegion() {
+            const regionName = document.getElementById('newRegionName').value.trim();
+            if (regionName) {
+                regions.push({ id: Date.now(), name: regionName });
+                document.getElementById('newRegionName').value = '';
+                renderRegions();
+                alert('✅ Región agregada!');
+            }
+        }
+        
+        function deleteRegion(regionId) {
+            if (confirm('¿Eliminar esta región?')) {
+                regions = regions.filter(r => r.id !== regionId);
+                renderRegions();
+            }
+        }
+        
+        function renderRegions() {
+            const list = document.getElementById('regionsList');
+            if (regions.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding: 20px;"><p>No hay regiones agregadas</p></div>';
+                return;
+            }
+            list.innerHTML = regions.map(region => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-info">
+                            <div class="item-name">${region.name}</div>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-danger btn-sm" onclick="deleteRegion(${region.id})">🗑️ Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function addSpecialRoute() {
+            const origin = document.getElementById('specialRouteOrigin').value.trim();
+            const destination = document.getElementById('specialRouteDestination').value.trim();
+            const fare = parseFloat(document.getElementById('specialRouteFare').value);
+            if (origin && destination && !isNaN(fare)) {
+                specialRoutes.push({ id: Date.now(), origin, destination, fare });
+                document.getElementById('specialRouteOrigin').value = '';
+                document.getElementById('specialRouteDestination').value = '';
+                document.getElementById('specialRouteFare').value = '';
+                renderSpecialRoutes();
+                alert('✅ Tarifa especial agregada!');
+            }
+        }
+        
+        function deleteSpecialRoute(routeId) {
+            if (confirm('¿Eliminar esta tarifa especial?')) {
+                specialRoutes = specialRoutes.filter(r => r.id !== routeId);
+                renderSpecialRoutes();
+            }
+        }
+        
+        function renderSpecialRoutes() {
+            const list = document.getElementById('specialRoutesList');
+            if (specialRoutes.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding: 20px;"><p>No hay tarifas especiales agregadas</p></div>';
+                return;
+            }
+            list.innerHTML = specialRoutes.map(route => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-info">
+                            <div class="item-name">${route.origin} → ${route.destination}</div>
+                            <div class="item-details">
+                                💰 Tarifa: Bs ${route.fare}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-danger btn-sm" onclick="deleteSpecialRoute(${route.id})">🗑️ Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function saveSystemSettings() {
+            const settings = {
+                minFare: parseFloat(document.getElementById('minFare').value),
+                dayRatePerKm: parseFloat(document.getElementById('dayRatePerKm').value),
+                nightRatePerKm: parseFloat(document.getElementById('nightRatePerKm').value),
+                dayRatePerMin: parseFloat(document.getElementById('dayRatePerMin').value),
+                nightRatePerMin: parseFloat(document.getElementById('nightRatePerMin').value),
+                nightStartTime: document.getElementById('nightStartTime').value,
+                nightEndTime: document.getElementById('nightEndTime').value,
+                specialMultiplier: parseFloat(document.getElementById('specialMultiplier').value),
+                commissionPercentage: parseFloat(document.getElementById('commissionPercentage').value),
+                regions: regions,
+                specialRoutes: specialRoutes,
+                specialDestinations: specialDestinations,
+                updatedAt: Date.now()
+            };
+            
+            database.ref('systemSettings').set(settings)
+                .then(() => {
+                    alert('✅ Configuración guardada exitosamente!');
+                })
+                .catch(error => {
+                    alert('❌ Error al guardar: ' + error.message);
+                });
+        }
+        
+        function requestManualRide() {
+            const passengerName = document.getElementById('manualPassengerName').value.trim();
+            const passengerPhone = document.getElementById('manualPassengerPhone').value.trim();
+            const pickup = document.getElementById('manualPickup').value.trim();
+            const pickupLat = parseFloat(document.getElementById('manualPickupLat').value);
+            const pickupLng = parseFloat(document.getElementById('manualPickupLng').value);
+            const destination = document.getElementById('manualDestination').value.trim();
+            const destLat = parseFloat(document.getElementById('manualDestLat').value);
+            const destLng = parseFloat(document.getElementById('manualDestLng').value);
+            const fare = parseFloat(document.getElementById('manualFare').value);
+            const distance = parseFloat(document.getElementById('manualDistance').value);
+
+            if (!passengerName || !pickup || isNaN(pickupLat) || isNaN(pickupLng) || 
+                !destination || isNaN(destLat) || isNaN(destLng) || isNaN(fare)) {
+                alert('❌ Por favor completa todos los campos obligatorios');
+                return;
+            }
+
+            const rideId = Date.now().toString();
+            const rideData = {
+                id: rideId,
+                passengerId: 'admin_' + Date.now(),
+                passengerName: passengerName,
+                passengerPhone: passengerPhone || '',
+                pickup: pickup,
+                destination: destination,
+                pickupLocation: {
+                    lat: pickupLat,
+                    lng: pickupLng
+                },
+                destLocation: {
+                    lat: destLat,
+                    lng: destLng
+                },
+                status: 'pending',
+                fare: fare,
+                distanceKm: distance || 0,
+                createdAt: Date.now(),
+                nearbyDrivers: [],
+                currentDriverIndex: 0,
+                manualRequest: true
+            };
+
+            database.ref('activeDrivers').once('value', (driversSnapshot) => {
+                const nearbyDrivers = [];
+                driversSnapshot.forEach((driverSnapshot) => {
+                    const driverData = driverSnapshot.val();
+                    if (driverData.status === 'available' && driverData.location) {
+                        const driverLat = driverData.location.lat;
+                        const driverLng = driverData.location.lng;
+                        const driverDistance = calculateDistance(pickupLat, pickupLng, driverLat, driverLng);
+                        
+                        if (driverDistance <= 6.0) {
+                            const driver = {
+                                id: driverSnapshot.key,
+                                ...driverData,
+                                distance: driverDistance
+                            };
+                            nearbyDrivers.push(driver);
+                        }
+                    }
+                });
+                
+                nearbyDrivers.sort((a, b) => a.distance - b.distance);
+                rideData.nearbyDrivers = nearbyDrivers;
+                
+                database.ref('activeRides/' + rideId).set(rideData)
+                    .then(() => {
+                        alert('✅ Solicitud de viaje enviada exitosamente!');
+                        // Clear form
+                        document.getElementById('manualPassengerName').value = '';
+                        document.getElementById('manualPassengerPhone').value = '';
+                        document.getElementById('manualPickup').value = '';
+                        document.getElementById('manualPickupLat').value = '';
+                        document.getElementById('manualPickupLng').value = '';
+                        document.getElementById('manualDestination').value = '';
+                        document.getElementById('manualDestLat').value = '';
+                        document.getElementById('manualDestLng').value = '';
+                        document.getElementById('manualFare').value = '';
+                        document.getElementById('manualDistance').value = '';
+                        if (pickupMarker) manualRideMap.removeLayer(pickupMarker);
+                        if (destMarker) manualRideMap.removeLayer(destMarker);
+                        if (routeLine) manualRideMap.removeLayer(routeLine);
+                    })
+                    .catch(error => {
+                        alert('❌ Error al enviar solicitud: ' + error.message);
+                    });
+            });
+        }
+        
+        function updateStats() {
+            const activeCount = Array.from(activeDrivers.values()).filter(d => d.status === 'available').length;
+            const approvedCount = Array.from(allDrivers.values()).filter(d => d.approved === true).length;
+            const pendingCount = Array.from(allDrivers.values()).filter(d => d.approved === false && !d.suspended).length;
+            const suspendedCount = Array.from(allDrivers.values()).filter(d => d.suspended === true).length;
+            const passengersCount = allPassengers.size;
+            
+            document.getElementById('activeDrivers').textContent = activeCount;
+            document.getElementById('approvedDrivers').textContent = approvedCount;
+            document.getElementById('pendingDrivers').textContent = pendingCount;
+            document.getElementById('suspendedDrivers').textContent = suspendedCount;
+            document.getElementById('activeRides').textContent = activeRides.size;
+            document.getElementById('totalPassengers').textContent = passengersCount;
+            
+            let completedCount = 0, cancelledCount = 0, rejectedCount = 0, totalEarnings = 0;
+            completedRides.forEach(ride => {
+                if (ride.status === 'completed') {
+                    completedCount++;
+                    totalEarnings += parseFloat(ride.fare) || 0;
+                } else if (ride.status === 'cancelled') {
+                    cancelledCount++;
+                } else if (ride.status === 'rejected') {
+                    rejectedCount++;
+                }
+            });
+            
+            document.getElementById('totalCompletedRides').textContent = completedCount;
+            document.getElementById('totalCancelledRides').textContent = cancelledCount;
+            document.getElementById('totalRejectedRides').textContent = rejectedCount;
+            document.getElementById('totalEarnings').textContent = totalEarnings.toFixed(2);
+            
+            updateDashboardCharts(approvedCount, pendingCount, suspendedCount, completedCount, cancelledCount, rejectedCount);
+        }
+        
+        function updateDashboardCharts(approved, pending, suspended, completed, cancelled, rejected) {
+            const ridesCtx = document.getElementById('ridesStatusChart').getContext('2d');
+            if (ridesStatusChart) ridesStatusChart.destroy();
+            ridesStatusChart = new Chart(ridesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completados', 'Cancelados', 'Rechazados'],
+                    datasets: [{
+                        data: [completed, cancelled, rejected],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+            
+            const driversCtx = document.getElementById('driversStatusChart').getContext('2d');
+            if (driversStatusChart) driversStatusChart.destroy();
+            driversStatusChart = new Chart(driversCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aprobados', 'Pendientes', 'Suspendidos'],
+                    datasets: [{
+                        data: [approved, pending, suspended],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+            
+            const distCtx = document.getElementById('ridesDistributionChart');
+            if (distCtx) {
+                if (ridesDistributionChart) ridesDistributionChart.destroy();
+                ridesDistributionChart = new Chart(distCtx.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['Completados', 'Cancelados', 'Rechazados'],
+                        datasets: [{
+                            data: [completed, cancelled, rejected],
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            }
+            
+            updateTopDriversChart();
+        }
+        
+        function updateTopDriversChart() {
+            const driverStats = {};
+            completedRides.forEach(ride => {
+                if (ride.driverId && ride.status === 'completed') {
+                    if (!driverStats[ride.driverId]) {
+                        driverStats[ride.driverId] = { count: 0, name: 'Conductor' };
+                    }
+                    driverStats[ride.driverId].count++;
+                    const driver = allDrivers.get(ride.driverId);
+                    if (driver) driverStats[ride.driverId].name = driver.name || 'Conductor';
+                }
+            });
+            
+            const sorted = Object.entries(driverStats).sort((a, b) => b[1].count - a[1].count).slice(0, 5);
+            
+            const ctx = document.getElementById('topDriversChart');
+            if (ctx) {
+                if (topDriversChart) topDriversChart.destroy();
+                topDriversChart = new Chart(ctx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: sorted.map(d => d[1].name),
+                        datasets: [{
+                            label: 'Viajes Completados',
+                            data: sorted.map(d => d[1].count),
+                            backgroundColor: '#10b981'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+        }
+        
         function updateDriverMarkers() {
             Object.values(driverMarkers).forEach(marker => map.removeLayer(marker));
             driverMarkers = {};
             
-            drivers.forEach((driver, driverId) => {
+            activeDrivers.forEach((driver, driverId) => {
                 if (driver.location) {
                     let iconColor, statusText;
-                    
                     if (driver.status === 'available') {
                         iconColor = '#10b981';
                         statusText = 'Disponible';
@@ -387,117 +2143,603 @@
                     
                     const customIcon = L.divIcon({
                         className: 'custom-marker',
-                        html: `<div style="background: ${iconColor}; width: 40px; height: 40px; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px;">🚗</div>`,
-                        iconSize: [40, 40],
-                        iconAnchor: [20, 20]
+                        html: `<div style="background: ${iconColor}; width: 44px; height: 44px; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 22px;">🚗</div>`,
+                        iconSize: [44, 44],
+                        iconAnchor: [22, 22]
                     });
                     
+                    const driverInfo = allDrivers.get(driverId) || {};
                     const marker = L.marker([driver.location.lat, driver.location.lng], { icon: customIcon })
                         .addTo(map)
-                        .bindPopup(`<b>${driver.name || 'Conductor'}</b><br>Estado: ${statusText}<br>Vehículo: ${driver.vehicle || 'N/A'}<br>Placa: ${driver.licensePlate || 'N/A'}`);
+                        .bindPopup(`<b>${driverInfo.name || 'Conductor'}</b><br>Estado: ${statusText}<br>Vehículo: ${driverInfo.vehicle || 'N/A'}<br>Placa: ${driverInfo.licensePlate || 'N/A'}`);
                     
                     driverMarkers[driverId] = marker;
                 }
             });
             
-            const driversWithLocation = Array.from(drivers.values()).filter(d => d.location);
+            const driversWithLocation = Array.from(activeDrivers.values()).filter(d => d.location);
             if (driversWithLocation.length > 0) {
                 const bounds = L.latLngBounds(driversWithLocation.map(d => [d.location.lat, d.location.lng]));
                 map.fitBounds(bounds, { padding: [50, 50] });
             }
         }
         
-        // Renderizar lista de conductores
+        function getStatusBadge(type, item) {
+            if (type === 'driver') {
+                if (item.suspended) {
+                    return '<span class="status-badge status-suspended">Suspendido</span>';
+                } else if (item.approved) {
+                    return '<span class="status-badge status-approved">Aprobado</span>';
+                } else {
+                    return '<span class="status-badge status-pending">Pendiente</span>';
+                }
+            } else if (type === 'passenger') {
+                if (item.approved) {
+                    return '<span class="status-badge status-approved">Aprobado</span>';
+                } else {
+                    return '<span class="status-badge status-pending">Pendiente</span>';
+                }
+            }
+        }
+        
+        function getActiveStatusBadge(driverId) {
+            const active = activeDrivers.get(driverId);
+            if (active) {
+                return active.status === 'available' 
+                    ? '<span class="status-badge status-available">En Línea</span>'
+                    : '<span class="status-badge status-busy">Ocupado</span>';
+            }
+            return '';
+        }
+        
+        function filterDrivers(tab) {
+            currentDriverTab = tab;
+            document.querySelectorAll('[data-driver-tab]').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-driver-tab="' + tab + '"]').classList.add('active');
+            renderDrivers();
+        }
+        
         function renderDrivers() {
             const list = document.getElementById('driverList');
+            let filtered = Array.from(allDrivers.entries());
             
-            if (drivers.size === 0) {
-                list.innerHTML = '<div class="empty-state">No hay conductores</div>';
+            if (currentDriverTab === 'pending') {
+                filtered = filtered.filter(([id, d]) => !d.approved && !d.suspended);
+            } else if (currentDriverTab === 'approved') {
+                filtered = filtered.filter(([id, d]) => d.approved && !d.suspended);
+            } else if (currentDriverTab === 'suspended') {
+                filtered = filtered.filter(([id, d]) => d.suspended);
+            }
+            
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👨‍✈️</div><p>No hay conductores en esta categoría</p></div>';
                 return;
-            } else {
-                list.innerHTML = Array.from(drivers.entries()).map(([driverId, driver]) => {
-                    const statusClass = driver.status === 'available' ? 'status-available' : 'status-occupied';
-                    const statusText = driver.status === 'available' ? 'Disponible' : 'Ocupado';
-                    const statusDot = driver.status === 'available' ? '🟢' : '🔴';
-                    
-                    return `
-                    <div class="driver-item">
-                        <div class="driver-info">
-                            <div class="driver-name">${statusDot} ${driver.name || 'Conductor'}</div>
-                            <div class="driver-location">
-                                📍 ${driver.location ? driver.location.lat.toFixed(4) + ', ' + driver.location.lng.toFixed(4) : 'Sin ubicación'}
-                            </div>
-                            <div class="driver-location">
+            }
+            
+            list.innerHTML = filtered.map(([driverId, driver]) => {
+                const isActive = activeDrivers.has(driverId);
+                return `
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-info">
+                            <div class="item-name">${driver.name || 'Conductor'} ${isActive ? '🟢' : ''}</div>
+                            <div class="item-details">
+                                📧 ${driver.email || 'N/A'}<br>
+                                📱 ${driver.phone || 'N/A'}<br>
                                 🚗 ${driver.vehicle || 'N/A'} | ${driver.licensePlate || 'N/A'}
                             </div>
                         </div>
-                        <span class="status-badge ${statusClass}">
-                            ${statusText}
-                        </span>
-                    </div>
-                `}).join('');
-            }
-        }
-        
-        // Renderizar lista de viajes
-        function renderRides() {
-            const list = document.getElementById('rideList');
-            
-            if (rides.size === 0) {
-                list.innerHTML = '<div class="empty-state">No hay viajes activos</div>';
-            } else {
-                list.innerHTML = Array.from(rides.entries()).map(([rideId, ride]) => {
-                    const statusText = ride.status === 'pending' ? 'Pendiente' : 
-                                      ride.status === 'accepted' ? 'Aceptado' : 
-                                      ride.status === 'arrived' ? 'Llegado' : 
-                                      ride.status === 'in_progress' ? 'En Curso' : 'Desconocido';
-                    
-                    return `
-                    <div class="ride-item">
-                        <div class="ride-info">
-                            <div class="driver-name">${ride.pickup || 'Recogida'} → ${ride.destination || 'Destino'}</div>
-                            <div class="driver-location">
-                                💰 Bs ${ride.fare || '0.00'} | 📏 ${ride.distanceKm || '0'} km
-                            </div>
-                            ${ride.driverData ? `<div class="driver-location">👨 Conductor: ${ride.driverData.name || 'N/A'}</div>` : ''}
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            ${getActiveStatusBadge(driverId)}
+                            ${getStatusBadge('driver', driver)}
                         </div>
-                        <span class="status-badge status-${ride.status || 'pending'}">
-                            ${statusText}
-                        </span>
                     </div>
-                `}).join('');
+                    <div class="actions">
+                        ${!driver.approved && !driver.suspended ? `<button class="btn btn-primary btn-sm" onclick="approveDriver('${driverId}')">✅ Aprobar</button>` : ''}
+                        ${!driver.suspended ? `<button class="btn btn-warning btn-sm" onclick="suspendDriver('${driverId}')">⚠️ Suspender</button>` : `<button class="btn btn-primary btn-sm" onclick="activateDriver('${driverId}')">✅ Activar</button>`}
+                        <button class="btn btn-secondary btn-sm" onclick="openEditDriverModal('${driverId}')">✏️ Editar</button>
+                        <button class="btn btn-info btn-sm" onclick="openPhotosModal('${driverId}')">📷 Fotos</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteDriver('${driverId}')">🗑️ Borrar</button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+        
+        function filterPassengers(tab) {
+            currentPassengerTab = tab;
+            document.querySelectorAll('[data-passenger-tab]').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-passenger-tab="' + tab + '"]').classList.add('active');
+            renderPassengers();
+        }
+        
+        function renderPassengers() {
+            const list = document.getElementById('passengerList');
+            let passengers = Array.from(allPassengers.entries());
+            
+            if (currentPassengerTab === 'pending') {
+                passengers = passengers.filter(([id, p]) => !p.approved);
+            } else if (currentPassengerTab === 'approved') {
+                passengers = passengers.filter(([id, p]) => p.approved);
+            }
+            
+            if (passengers.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><p>No hay clientes en esta categoría</p></div>';
+                return;
+            }
+            
+            list.innerHTML = passengers.map(([passengerId, passenger]) => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-info">
+                            <div class="item-name">${passenger.name || 'Cliente'}</div>
+                            <div class="item-details">
+                                📧 ${passenger.email || 'N/A'}<br>
+                                📱 ${passenger.phone || 'N/A'}
+                            </div>
+                        </div>
+                        ${getStatusBadge('passenger', passenger)}
+                    </div>
+                    <div class="actions">
+                        ${!passenger.approved ? `<button class="btn btn-primary btn-sm" onclick="approvePassenger('${passengerId}')">✅ Aprobar</button>` : ''}
+                        <button class="btn btn-secondary btn-sm" onclick="openEditPassengerModal('${passengerId}')">✏️ Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="deletePassenger('${passengerId}')">🗑️ Borrar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function approvePassenger(passengerId) {
+            database.ref('passengers/' + passengerId).update({ approved: true });
+        }
+        
+        function deletePassenger(passengerId) {
+            if (confirm('¿Estás seguro de borrar a este cliente? Esta acción no se puede deshacer.')) {
+                database.ref('passengers/' + passengerId).remove();
             }
         }
         
-        // Escuchar cambios en conductores activos
-        database.ref('activeDrivers').on('value', (snapshot) => {
-            drivers.clear();
-            snapshot.forEach((childSnapshot) => {
-                const driverId = childSnapshot.key;
-                const driverData = childSnapshot.val();
-                drivers.set(driverId, driverData);
+        function renderDriverStatsList() {
+            const list = document.getElementById('driverStatsList');
+            const drivers = Array.from(allDrivers.entries());
+            
+            if (drivers.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><p>No hay conductores registrados</p></div>';
+                return;
+            }
+            
+            list.innerHTML = drivers.map(([driverId, driver]) => {
+                let completed = 0, cancelled = 0, rejected = 0, earnings = 0;
+                completedRides.forEach(ride => {
+                    if (ride.driverId === driverId) {
+                        if (ride.status === 'completed') {
+                            completed++;
+                            earnings += parseFloat(ride.fare) || 0;
+                        } else if (ride.status === 'cancelled') cancelled++;
+                        else if (ride.status === 'rejected') rejected++;
+                    }
+                });
+                
+                return `
+                <div class="item-card" onclick="showDriverDetail('${driverId}')">
+                    <div class="item-header">
+                        <div class="item-info">
+                            <div class="item-name">${driver.name || 'Conductor'}</div>
+                            <div class="item-details">
+                                🚗 ${driver.vehicle || 'N/A'} | ${driver.licensePlate || 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item-details" style="margin-top: 12px;">
+                        <strong>✅ ${completed}</strong> completados | 
+                        <strong>❌ ${cancelled}</strong> cancelados | 
+                        <strong>🚫 ${rejected}</strong> rechazados | 
+                        <strong>💰 Bs ${earnings.toFixed(2)}</strong>
+                    </div>
+                </div>
+            `}).join('');
+        }
+        
+        function showDriverDetail(driverId) {
+            selectedDriverId = driverId;
+            const driver = allDrivers.get(driverId);
+            if (!driver) return;
+            
+            let completed = 0, cancelled = 0, rejected = 0, earnings = 0;
+            completedRides.forEach(ride => {
+                if (ride.driverId === driverId) {
+                    if (ride.status === 'completed') {
+                        completed++;
+                        earnings += parseFloat(ride.fare) || 0;
+                    } else if (ride.status === 'cancelled') cancelled++;
+                    else if (ride.status === 'rejected') rejected++;
+                }
             });
             
+            document.getElementById('driverStatsSection').style.display = 'none';
+            document.getElementById('driverDetailSection').style.display = 'block';
+            document.getElementById('selectedDriverName').textContent = driver.name || 'Conductor';
+            document.getElementById('selectedDriverVehicle').textContent = '🚗 ' + (driver.vehicle || 'N/A') + ' | ' + (driver.licensePlate || 'N/A');
+            document.getElementById('selectedDriverAvatar').textContent = (driver.name || 'C').charAt(0).toUpperCase();
+            document.getElementById('driverCompletedRides').textContent = completed;
+            document.getElementById('driverCancelledRides').textContent = cancelled;
+            document.getElementById('driverRejectedRides').textContent = rejected;
+            document.getElementById('driverEarnings').textContent = earnings.toFixed(2);
+            
+            const ctx = document.getElementById('driverPerformanceChart').getContext('2d');
+            if (driverPerformanceChart) driverPerformanceChart.destroy();
+            driverPerformanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Completados', 'Cancelados', 'Rechazados'],
+                    datasets: [{
+                        label: 'Cantidad',
+                        data: [completed, cancelled, rejected],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+        
+        function closeDriverDetail() {
+            document.getElementById('driverStatsSection').style.display = 'block';
+            document.getElementById('driverDetailSection').style.display = 'none';
+            selectedDriverId = null;
+        }
+        
+        function approveDriver(driverId) {
+            database.ref('drivers/' + driverId).update({ approved: true });
+        }
+        
+        function suspendDriver(driverId) {
+            if (confirm('¿Estás seguro de suspender a este conductor?')) {
+                database.ref('drivers/' + driverId).update({ suspended: true });
+                database.ref('activeDrivers/' + driverId).remove();
+            }
+        }
+        
+        function activateDriver(driverId) {
+            database.ref('drivers/' + driverId).update({ suspended: false });
+        }
+        
+        function deleteDriver(driverId) {
+            if (confirm('¿Estás seguro de borrar a este conductor? Esta acción no se puede deshacer.')) {
+                database.ref('drivers/' + driverId).remove();
+                database.ref('activeDrivers/' + driverId).remove();
+            }
+        }
+        
+        function openEditDriverModal(driverId) {
+            editingDriverId = driverId;
+            const driver = allDrivers.get(driverId);
+            if (driver) {
+                document.getElementById('editDriverName').value = driver.name || '';
+                document.getElementById('editDriverEmail').value = driver.email || '';
+                document.getElementById('editDriverPhone').value = driver.phone || '';
+                document.getElementById('editDriverVehicle').value = driver.vehicle || '';
+                document.getElementById('editDriverLicensePlate').value = driver.licensePlate || '';
+                document.getElementById('editDriverModal').classList.add('show');
+            }
+        }
+        
+        function closeEditDriverModal() {
+            document.getElementById('editDriverModal').classList.remove('show');
+            editingDriverId = null;
+        }
+        
+        function saveDriverEdit() {
+            if (editingDriverId) {
+                const updates = {
+                    name: document.getElementById('editDriverName').value,
+                    email: document.getElementById('editDriverEmail').value,
+                    phone: document.getElementById('editDriverPhone').value,
+                    vehicle: document.getElementById('editDriverVehicle').value,
+                    licensePlate: document.getElementById('editDriverLicensePlate').value
+                };
+                database.ref('drivers/' + editingDriverId).update(updates);
+                closeEditDriverModal();
+            }
+        }
+        
+        let editingDriverPhotosId = null;
+        
+        function openPhotosModal(driverId) {
+            editingDriverPhotosId = driverId;
+            const driver = allDrivers.get(driverId);
+            
+            // Mostrar previsualizaciones de fotos existentes
+            if (driver?.driverPhotoUrl) {
+                document.getElementById('profilePhotoPreview').src = driver.driverPhotoUrl;
+                document.getElementById('profilePhotoPreview').style.display = 'block';
+            }
+            if (driver?.licensePhotoFrontUrl) {
+                document.getElementById('licenseFrontPreview').src = driver.licensePhotoFrontUrl;
+                document.getElementById('licenseFrontPreview').style.display = 'block';
+            }
+            if (driver?.licensePhotoBackUrl) {
+                document.getElementById('licenseBackPreview').src = driver.licensePhotoBackUrl;
+                document.getElementById('licenseBackPreview').style.display = 'block';
+            }
+            if (driver?.ciPhotoFrontUrl) {
+                document.getElementById('idFrontPreview').src = driver.ciPhotoFrontUrl;
+                document.getElementById('idFrontPreview').style.display = 'block';
+            }
+            if (driver?.ciPhotoBackUrl) {
+                document.getElementById('idBackPreview').src = driver.ciPhotoBackUrl;
+                document.getElementById('idBackPreview').style.display = 'block';
+            }
+            
+            // Agregar event listeners para previsualizar nuevas fotos
+            document.getElementById('editProfilePhoto').onchange = function(e) {
+                previewImage(e, 'profilePhotoPreview');
+            };
+            document.getElementById('editLicenseFront').onchange = function(e) {
+                previewImage(e, 'licenseFrontPreview');
+            };
+            document.getElementById('editLicenseBack').onchange = function(e) {
+                previewImage(e, 'licenseBackPreview');
+            };
+            document.getElementById('editIdFront').onchange = function(e) {
+                previewImage(e, 'idFrontPreview');
+            };
+            document.getElementById('editIdBack').onchange = function(e) {
+                previewImage(e, 'idBackPreview');
+            };
+            
+            document.getElementById('photosModal').classList.add('show');
+        }
+        
+        function previewImage(event, previewId) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById(previewId);
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function closePhotosModal() {
+            document.getElementById('photosModal').classList.remove('show');
+            editingDriverPhotosId = null;
+            // Limpiar inputs y previsualizaciones
+            document.getElementById('editProfilePhoto').value = '';
+            document.getElementById('editLicenseFront').value = '';
+            document.getElementById('editLicenseBack').value = '';
+            document.getElementById('editIdFront').value = '';
+            document.getElementById('editIdBack').value = '';
+            document.getElementById('profilePhotoPreview').style.display = 'none';
+            document.getElementById('licenseFrontPreview').style.display = 'none';
+            document.getElementById('licenseBackPreview').style.display = 'none';
+            document.getElementById('idFrontPreview').style.display = 'none';
+            document.getElementById('idBackPreview').style.display = 'none';
+        }
+        
+        function saveDriverPhotos() {
+            if (!editingDriverPhotosId) return;
+            
+            const updates = {};
+            const profileFile = document.getElementById('editProfilePhoto').files[0];
+            const licenseFrontFile = document.getElementById('editLicenseFront').files[0];
+            const licenseBackFile = document.getElementById('editLicenseBack').files[0];
+            const idFrontFile = document.getElementById('editIdFront').files[0];
+            const idBackFile = document.getElementById('editIdBack').files[0];
+            
+            // Función helper para convertir archivo a base64
+            const processFile = (file, callback) => {
+                if (!file) {
+                    callback(null);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    callback(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            };
+            
+            let filesProcessed = 0;
+            const totalFiles = [profileFile, licenseFrontFile, licenseBackFile, idFrontFile, idBackFile].filter(f => f).length;
+            
+            if (totalFiles === 0) {
+                alert('❌ No seleccionaste ninguna foto nueva');
+                return;
+            }
+            
+            const checkAndSave = () => {
+                filesProcessed++;
+                if (filesProcessed >= totalFiles) {
+                    database.ref('drivers/' + editingDriverPhotosId).update(updates)
+                        .then(() => {
+                            alert('✅ Fotos guardadas exitosamente!');
+                            closePhotosModal();
+                        })
+                        .catch(error => {
+                            alert('❌ Error al guardar: ' + error.message);
+                        });
+                }
+            };
+            
+            if (profileFile) {
+                processFile(profileFile, (base64) => {
+                    if (base64) updates.driverPhotoUrl = base64;
+                    checkAndSave();
+                });
+            }
+            if (licenseFrontFile) {
+                processFile(licenseFrontFile, (base64) => {
+                    if (base64) updates.licensePhotoFrontUrl = base64;
+                    checkAndSave();
+                });
+            }
+            if (licenseBackFile) {
+                processFile(licenseBackFile, (base64) => {
+                    if (base64) updates.licensePhotoBackUrl = base64;
+                    checkAndSave();
+                });
+            }
+            if (idFrontFile) {
+                processFile(idFrontFile, (base64) => {
+                    if (base64) updates.ciPhotoFrontUrl = base64;
+                    checkAndSave();
+                });
+            }
+            if (idBackFile) {
+                processFile(idBackFile, (base64) => {
+                    if (base64) updates.ciPhotoBackUrl = base64;
+                    checkAndSave();
+                });
+            }
+        }
+        
+        function openEditPassengerModal(passengerId) {
+            editingPassengerId = passengerId;
+            const passenger = allPassengers.get(passengerId);
+            if (passenger) {
+                document.getElementById('editPassengerName').value = passenger.name || '';
+                document.getElementById('editPassengerEmail').value = passenger.email || '';
+                document.getElementById('editPassengerPhone').value = passenger.phone || '';
+                document.getElementById('editPassengerModal').classList.add('show');
+            }
+        }
+        
+        function closeEditPassengerModal() {
+            document.getElementById('editPassengerModal').classList.remove('show');
+            editingPassengerId = null;
+        }
+        
+        function savePassengerEdit() {
+            if (editingPassengerId) {
+                const updates = {
+                    name: document.getElementById('editPassengerName').value,
+                    email: document.getElementById('editPassengerEmail').value,
+                    phone: document.getElementById('editPassengerPhone').value
+                };
+                database.ref('passengers/' + editingPassengerId).update(updates);
+                closeEditPassengerModal();
+            }
+        }
+        
+        function filterRides(tab) {
+            currentRideTab = tab;
+            document.querySelectorAll('[data-ride-tab]').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-ride-tab="' + tab + '"]').classList.add('active');
+            renderRides();
+        }
+        
+        function renderRides() {
+            const list = document.getElementById('ridesList');
+            let rides = Array.from(completedRides.entries());
+            
+            if (currentRideTab === 'completed') {
+                rides = rides.filter(([id, r]) => r.status === 'completed');
+            } else if (currentRideTab === 'cancelled') {
+                rides = rides.filter(([id, r]) => r.status === 'cancelled');
+            } else if (currentRideTab === 'rejected') {
+                rides = rides.filter(([id, r]) => r.status === 'rejected');
+            }
+            
+            if (rides.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🚗</div><p>No hay solicitudes en esta categoría</p></div>';
+                return;
+            }
+            
+            rides.sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+            
+            list.innerHTML = rides.map(([rideId, ride]) => {
+                const statusClass = ride.status === 'completed' ? 'status-completed' : 
+                                   ride.status === 'cancelled' ? 'status-cancelled' : 'status-rejected';
+                const statusText = ride.status === 'completed' ? 'Completado' :
+                                  ride.status === 'cancelled' ? 'Cancelado' : 'Rechazado';
+                
+                const driver = ride.driverId ? allDrivers.get(ride.driverId) : null;
+                
+                return `
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-info">
+                            <div class="item-name">Viaje #${rideId.substring(0, 8)}</div>
+                            <div class="item-details">
+                                📅 ${ride.createdAt ? new Date(ride.createdAt).toLocaleDateString('es-ES', { dateStyle: 'long', timeStyle: 'short' }) : 'N/A'}
+                            </div>
+                        </div>
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="ride-detail">
+                        <strong>Pasajero:</strong> ${ride.passengerName || 'N/A'}<br>
+                        <strong>Recogida:</strong> ${ride.pickup || 'N/A'}<br>
+                        <strong>Destino:</strong> ${ride.destination || 'N/A'}<br>
+                        <strong>Tarifa:</strong> Bs ${ride.fare || 'N/A'}<br>
+                        ${driver ? `<strong>Conductor:</strong> ${driver.name || 'N/A'}` : ''}
+                    </div>
+                </div>
+            `}).join('');
+        }
+        
+        database.ref('drivers').on('value', (snapshot) => {
+            allDrivers.clear();
+            snapshot.forEach((child) => {
+                allDrivers.set(child.key, child.val());
+            });
             renderDrivers();
-            updateDriverMarkers();
+            renderDriverStatsList();
             updateStats();
         });
         
-        // Escuchar cambios en viajes activos
-        database.ref('activeRides').on('value', (snapshot) => {
-            rides.clear();
-            snapshot.forEach((childSnapshot) => {
-                const rideId = childSnapshot.key;
-                const rideData = childSnapshot.val();
-                rides.set(rideId, rideData);
+        database.ref('activeDrivers').on('value', (snapshot) => {
+            activeDrivers.clear();
+            snapshot.forEach((child) => {
+                activeDrivers.set(child.key, child.val());
             });
-            
+            updateDriverMarkers();
+            renderDrivers();
+            updateStats();
+        });
+        
+        database.ref('passengers').on('value', (snapshot) => {
+            allPassengers.clear();
+            snapshot.forEach((child) => {
+                allPassengers.set(child.key, child.val());
+            });
+            renderPassengers();
+            updateStats();
+        });
+        
+        database.ref('activeRides').on('value', (snapshot) => {
+            activeRides.clear();
+            snapshot.forEach((child) => {
+                activeRides.set(child.key, child.val());
+            });
+            updateStats();
+        });
+        
+        database.ref('completedRides').on('value', (snapshot) => {
+            completedRides.clear();
+            snapshot.forEach((child) => {
+                completedRides.set(child.key, child.val());
+            });
             renderRides();
             updateStats();
+            renderDriverStatsList();
         });
         
-        // Inicializar todo
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.classList.remove('show');
+                }
+            });
+        });
+        
         initMap();
+        loadSystemSettings();
     </script>
 </body>
 </html>
