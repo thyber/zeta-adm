@@ -693,6 +693,9 @@
         <div class="menu-item" data-page="manual-ride" onclick="showPage('manual-ride')">
             <span>📋</span> Pedir Taxi Manualmente
         </div>
+        <div class="menu-item" data-page="whatsapp-requests" onclick="showPage('whatsapp-requests')">
+            <span>💬</span> Solicitudes WhatsApp
+        </div>
         
         <div class="menu-section-title">Gestión</div>
         <div class="menu-item" data-page="notifications" onclick="showPage('notifications')">
@@ -941,6 +944,34 @@
                 </div>
                 <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
                     <button class="btn btn-primary" onclick="requestManualRide()">🚗 Enviar Solicitud</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- WhatsApp Requests -->
+        <div class="page-section" id="page-whatsapp-requests">
+            <div class="header">
+                <h2>💬 Solicitudes WhatsApp</h2>
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>Actualización en vivo</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="tabs">
+                    <button class="tab-btn active" data-whatsapp-tab="all" onclick="filterWhatsAppRequests('all')">Todos</button>
+                    <button class="tab-btn" data-whatsapp-tab="pending" onclick="filterWhatsAppRequests('pending')">Pendientes</button>
+                    <button class="tab-btn" data-whatsapp-tab="assigned" onclick="filterWhatsAppRequests('assigned')">Asignados</button>
+                    <button class="tab-btn" data-whatsapp-tab="completed" onclick="filterWhatsAppRequests('completed')">Completados</button>
+                    <button class="tab-btn" data-whatsapp-tab="cancelled" onclick="filterWhatsAppRequests('cancelled')">Cancelados</button>
+                </div>
+                
+                <div class="list-container" id="whatsappRequestsList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <p>Cargando solicitudes...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1423,6 +1454,8 @@
         let systemSettings = null;
         let currentNotificationTab = 'drivers';
         let notifications = new Map();
+        let whatsappRequests = new Map();
+        let currentWhatsAppTab = 'all';
         
         let ridesStatusChart, driversStatusChart, ridesDistributionChart, topDriversChart, driverPerformanceChart;
         
@@ -1451,6 +1484,8 @@
                 loadAppVersions();
             } else if (pageId === 'notifications') {
                 loadNotifications();
+            } else if (pageId === 'whatsapp-requests') {
+                loadWhatsAppRequests();
             }
         }
         
@@ -1592,7 +1627,7 @@
                                     <div class="item-name">${notif.title}</div>
                                     <div class="item-details">
                                         ${targetLabel}<br>
-                                        <small>${new Date(notif.createdAt).toLocaleDateString('es-ES', { dateStyle: 'long', timeStyle: 'short' })}</small>
+                                        <small>${new Date(notif.createdAt).toLocaleString('es-ES')}</small>
                                     </div>
                                 </div>
                             </div>
@@ -2294,7 +2329,24 @@
         
         function deletePassenger(passengerId) {
             if (confirm('¿Estás seguro de borrar a este cliente? Esta acción no se puede deshacer.')) {
-                database.ref('passengers/' + passengerId).remove();
+                fetch(`http://localhost:3000/api/delete-passenger/${passengerId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('✅ ' + data.message);
+                    } else {
+                        alert('❌ ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('❌ Error al borrar: Asegúrate que el chatbot esté ejecutándose');
+                });
             }
         }
         
@@ -2408,8 +2460,24 @@
         
         function deleteDriver(driverId) {
             if (confirm('¿Estás seguro de borrar a este conductor? Esta acción no se puede deshacer.')) {
-                database.ref('drivers/' + driverId).remove();
-                database.ref('activeDrivers/' + driverId).remove();
+                fetch(`http://localhost:3000/api/delete-driver/${driverId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('✅ ' + data.message);
+                    } else {
+                        alert('❌ ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('❌ Error al borrar: Asegúrate que el chatbot esté ejecutándose');
+                });
             }
         }
         
@@ -2667,7 +2735,7 @@
                         <div class="item-info">
                             <div class="item-name">Viaje #${rideId.substring(0, 8)}</div>
                             <div class="item-details">
-                                📅 ${ride.createdAt ? new Date(ride.createdAt).toLocaleDateString('es-ES', { dateStyle: 'long', timeStyle: 'short' }) : 'N/A'}
+                                📅 ${ride.createdAt ? new Date(ride.createdAt).toLocaleString('es-ES') : 'N/A'}
                             </div>
                         </div>
                         <span class="status-badge ${statusClass}">${statusText}</span>
@@ -2729,6 +2797,188 @@
             updateStats();
             renderDriverStatsList();
         });
+
+        // WhatsApp Requests Functions
+        function loadWhatsAppRequests() {
+            console.log('📋 Cargando solicitudes de WhatsApp desde Firebase...');
+            database.ref('rideRequests').orderByChild('createdAt').limitToLast(100).on('value', (snapshot) => {
+                console.log('✅ Datos recibidos de Firebase:', snapshot.val());
+                whatsappRequests.clear();
+                snapshot.forEach((child) => {
+                    whatsappRequests.set(child.key, child.val());
+                });
+                console.log('📝 Total de solicitudes cargadas:', whatsappRequests.size);
+                renderWhatsAppRequests();
+            }, (error) => {
+                console.error('❌ Error al cargar solicitudes:', error);
+            });
+        }
+
+        function filterWhatsAppRequests(tab) {
+            currentWhatsAppTab = tab;
+            document.querySelectorAll('[data-whatsapp-tab]').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-whatsapp-tab="' + tab + '"]').classList.add('active');
+            renderWhatsAppRequests();
+        }
+
+        function renderWhatsAppRequests() {
+            const list = document.getElementById('whatsappRequestsList');
+            let requests = Array.from(whatsappRequests.entries());
+
+            if (currentWhatsAppTab === 'pending') {
+                requests = requests.filter(([id, r]) => r.status === 'pending');
+            } else if (currentWhatsAppTab === 'assigned') {
+                requests = requests.filter(([id, r]) => r.status === 'assigned');
+            } else if (currentWhatsAppTab === 'completed') {
+                requests = requests.filter(([id, r]) => r.status === 'completed');
+            } else if (currentWhatsAppTab === 'cancelled') {
+                requests = requests.filter(([id, r]) => r.status === 'cancelled');
+            }
+
+            if (requests.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <p>No hay solicitudes en esta categoría</p>
+                    </div>
+                `;
+                return;
+            }
+
+            requests.sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+
+            list.innerHTML = requests.map(([requestId, request]) => {
+                const statusClass = request.status === 'pending' ? 'status-pending' : 
+                                   request.status === 'assigned' ? 'status-approved' :
+                                   request.status === 'cancelled' ? 'status-rejected' :
+                                   'status-completed';
+                const statusText = request.status === 'pending' ? 'Pendiente' :
+                                  request.status === 'assigned' ? 'Asignado' :
+                                  request.status === 'cancelled' ? 'Cancelado' : 'Completado';
+
+                const sourceLabel = request.source === 'whatsapp' ? '💬 WhatsApp' : '📱 App';
+                const serviceLabel = request.serviceType === 'aeropuerto' ? '✈️ Aeropuerto' : '🚗 Taxi';
+
+                const availableDrivers = Array.from(activeDrivers.entries()).filter(([id, d]) => {
+                    const driver = allDrivers.get(id);
+                    return driver && driver.approved && !driver.suspended;
+                });
+
+                let driverOptions = availableDrivers.map(([driverId, d]) => {
+                    const driver = allDrivers.get(driverId);
+                    return `<option value="${driverId}">${driver?.name || 'Conductor'} - ${driver?.vehicle || 'N/A'}</option>`;
+                }).join('');
+
+                return `
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-info">
+                            <div class="item-name">${request.passengerName || 'Cliente'}</div>
+                            <div class="item-details">
+                                ${sourceLabel} | ${serviceLabel}<br>
+                                📱 ${request.passengerPhone || 'N/A'}<br>
+                                📅 ${request.createdAt ? new Date(request.createdAt).toLocaleString('es-ES') : 'N/A'}
+                            </div>
+                        </div>
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="ride-detail">
+                        <strong>Recogida:</strong> ${request.pickup || 'N/A'}<br>
+                        <strong>Destino:</strong> ${request.destination || 'N/A'}
+                    </div>
+                    ${request.status === 'pending' ? `
+                    <div class="actions">
+                        ${availableDrivers.length > 0 ? `
+                        <select id="driver-select-${requestId}" style="padding: 8px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                            <option value="">Seleccionar conductor...</option>
+                            ${driverOptions}
+                        </select>
+                        <button class="btn btn-primary btn-sm" onclick="assignDriverToRequest('${requestId}')">✅ Asignar</button>
+                        ` : '<span style="color: #ef4444;">No hay conductores disponibles</span>'}
+                        <button class="btn btn-danger btn-sm" onclick="cancelWhatsAppRequest('${requestId}')">❌ Cancelar</button>
+                    </div>
+                    ` : ''}
+                    ${request.status === 'assigned' ? `
+                    <div class="actions">
+                        <button class="btn btn-primary btn-sm" onclick="completeWhatsAppRequest('${requestId}')">✅ Completar</button>
+                    </div>
+                    ` : ''}
+                </div>
+            `}).join('');
+        }
+
+        function assignDriverToRequest(requestId) {
+            const selectElement = document.getElementById(`driver-select-${requestId}`);
+            const driverId = selectElement.value;
+            if (!driverId) {
+                alert('⚠️ Por favor selecciona un conductor');
+                return;
+            }
+
+            const request = whatsappRequests.get(requestId);
+            const driver = allDrivers.get(driverId);
+
+            // Update request status
+            database.ref('rideRequests/' + requestId).update({
+                status: 'assigned',
+                driverId: driverId,
+                assignedAt: Date.now()
+            });
+
+            // Create active ride
+            const newRideRef = database.ref('activeRides').push();
+            const rideId = newRideRef.key;
+            
+            const rideData = {
+                id: rideId,
+                passengerName: request.passengerName,
+                passengerPhone: request.passengerPhone,
+                pickup: request.pickup,
+                destination: request.destination,
+                serviceType: request.serviceType,
+                driverId: driverId,
+                driverName: driver?.name,
+                status: 'accepted',
+                source: 'whatsapp',
+                fare: 0,
+                createdAt: Date.now()
+            };
+            
+            // Si la solicitud tiene ubicación GPS, añadirla
+            if (request.pickupLocation) {
+                rideData.pickupLocation = request.pickupLocation;
+            }
+
+            newRideRef.set(rideData);
+
+            // Send notification to driver
+            database.ref('drivers/' + driverId + '/notifications').push({
+                title: 'Nuevo viaje desde WhatsApp',
+                message: `Tienes un nuevo viaje: ${request.pickup} → ${request.destination}`,
+                createdAt: Date.now(),
+                read: false
+            });
+
+            alert('✅ Conductor asignado exitosamente!');
+        }
+
+        function cancelWhatsAppRequest(requestId) {
+            if (confirm('¿Estás seguro de cancelar esta solicitud?')) {
+                database.ref('rideRequests/' + requestId).update({
+                    status: 'cancelled',
+                    cancelledAt: Date.now()
+                });
+            }
+        }
+
+        function completeWhatsAppRequest(requestId) {
+            if (confirm('¿Estás seguro de marcar esta solicitud como completada?')) {
+                database.ref('rideRequests/' + requestId).update({
+                    status: 'completed',
+                    completedAt: Date.now()
+                });
+            }
+        }
         
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
             overlay.addEventListener('click', (e) => {
