@@ -698,6 +698,9 @@
         </div>
         
         <div class="menu-section-title">Gestión</div>
+        <div class="menu-item" data-page="recharges" onclick="showPage('recharges')">
+            <span>💳</span> Recargas de Saldo
+        </div>
         <div class="menu-item" data-page="notifications" onclick="showPage('notifications')">
             <span>📢</span> Notificaciones
         </div>
@@ -975,7 +978,52 @@
                 </div>
             </div>
         </div>
-        
+
+        <!-- Recargas de Saldo -->
+        <div class="page-section" id="page-recharges">
+            <div class="header">
+                <h2>💳 Recargas de Saldo</h2>
+            </div>
+
+            <div class="section">
+                <h3>Generar Códigos de Recarga</h3>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label>Monto (Bs)</label>
+                            <input type="number" id="rechargeAmount" step="0.5" placeholder="Ej: 50">
+                        </div>
+                        <div class="form-group">
+                            <label>Código (opcional - se genera automáticamente si se deja vacío)</label>
+                            <input type="text" id="rechargeCode" placeholder="Ej: ABC123">
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad de códigos</label>
+                            <input type="number" id="rechargeCount" value="1" min="1" max="100">
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                    <button class="btn btn-primary" onclick="generateRechargeCodes()">✨ Generar Códigos</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Historial de Códigos</h3>
+                <div class="tabs" style="margin-bottom: 24px;">
+                    <button class="tab-btn active" data-recharge-tab="all" onclick="filterRechargeCodes('all')">Todos</button>
+                    <button class="tab-btn" data-recharge-tab="available" onclick="filterRechargeCodes('available')">Disponibles</button>
+                    <button class="tab-btn" data-recharge-tab="used" onclick="filterRechargeCodes('used')">Usados</button>
+                </div>
+                <div class="list-container" id="rechargeCodesList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💳</div>
+                        <p>Cargando códigos de recarga...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Notificaciones -->
         <div class="page-section" id="page-notifications">
             <div class="header">
@@ -1368,23 +1416,31 @@
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                 <div class="form-group" style="margin: 0;">
+                    <label>Foto del Vehículo</label>
+                    <input type="file" id="editVehiclePhoto" accept="image/*" style="margin-bottom: 8px;">
+                    <img id="vehiclePhotoPreview" style="max-width: 100%; border-radius: 8px; display: none;">
+                </div>
+                <div class="form-group" style="margin: 0;">
                     <label>Licencia de Conducir - Anverso</label>
                     <input type="file" id="editLicenseFront" accept="image/*" style="margin-bottom: 8px;">
                     <img id="licenseFrontPreview" style="max-width: 100%; border-radius: 8px; display: none;">
-                </div>
-                <div class="form-group" style="margin: 0;">
-                    <label>Licencia de Conducir - Reverso</label>
-                    <input type="file" id="editLicenseBack" accept="image/*" style="margin-bottom: 8px;">
-                    <img id="licenseBackPreview" style="max-width: 100%; border-radius: 8px; display: none;">
                 </div>
             </div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                 <div class="form-group" style="margin: 0;">
+                    <label>Licencia de Conducir - Reverso</label>
+                    <input type="file" id="editLicenseBack" accept="image/*" style="margin-bottom: 8px;">
+                    <img id="licenseBackPreview" style="max-width: 100%; border-radius: 8px; display: none;">
+                </div>
+                <div class="form-group" style="margin: 0;">
                     <label>Carnet de Identidad - Anverso</label>
                     <input type="file" id="editIdFront" accept="image/*" style="margin-bottom: 8px;">
                     <img id="idFrontPreview" style="max-width: 100%; border-radius: 8px; display: none;">
                 </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px;">
                 <div class="form-group" style="margin: 0;">
                     <label>Carnet de Identidad - Reverso</label>
                     <input type="file" id="editIdBack" accept="image/*" style="margin-bottom: 8px;">
@@ -1418,6 +1474,17 @@
             <div class="modal-actions">
                 <button class="modal-btn cancel" onclick="closeEditPassengerModal()">Cancelar</button>
                 <button class="modal-btn save" onclick="savePassengerEdit()">Guardar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Details View Modal -->
+    <div class="modal-overlay" id="userDetailsModal">
+        <div class="modal" style="max-width: 1000px;">
+            <h3 id="detailsModalTitle">Detalles</h3>
+            <div id="detailsModalContent" style="margin-bottom: 24px;"></div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeUserDetailsModal()">Cerrar</button>
             </div>
         </div>
     </div>
@@ -1479,14 +1546,16 @@
             } else if (pageId === 'settings') {
                 loadSystemSettings();
             } else if (pageId === 'manual-ride') {
-                initManualRideMap();
-            } else if (pageId === 'app-versions') {
-                loadAppVersions();
-            } else if (pageId === 'notifications') {
-                loadNotifications();
-            } else if (pageId === 'whatsapp-requests') {
-                loadWhatsAppRequests();
-            }
+            initManualRideMap();
+        } else if (pageId === 'app-versions') {
+            loadAppVersions();
+        } else if (pageId === 'notifications') {
+            loadNotifications();
+        } else if (pageId === 'whatsapp-requests') {
+            loadWhatsAppRequests();
+        } else if (pageId === 'recharges') {
+            loadRechargeCodes();
+        }
         }
         
         function loadAppVersions() {
@@ -2253,15 +2322,22 @@
             
             list.innerHTML = filtered.map(([driverId, driver]) => {
                 const isActive = activeDrivers.has(driverId);
+                const profilePic = driver.driverPhotoUrl || driver.profilePhotoUrl;
                 return `
                 <div class="item-card">
                     <div class="item-header">
-                        <div class="item-info">
-                            <div class="item-name">${driver.name || 'Conductor'} ${isActive ? '🟢' : ''}</div>
-                            <div class="item-details">
-                                📧 ${driver.email || 'N/A'}<br>
-                                📱 ${driver.phone || 'N/A'}<br>
-                                🚗 ${driver.vehicle || 'N/A'} | ${driver.licensePlate || 'N/A'}
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            ${profilePic ? 
+                                `<img src="${profilePic}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #e5e7eb;">` : 
+                                `<div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 24px; color: white;">👨‍✈️</div>`
+                            }
+                            <div class="item-info">
+                                <div class="item-name">${driver.name || 'Conductor'} ${isActive ? '🟢' : ''}</div>
+                                <div class="item-details">
+                                    📧 ${driver.email || 'N/A'}<br>
+                                    📱 ${driver.phone || 'N/A'}<br>
+                                    🚗 ${driver.vehicle || 'N/A'} | ${driver.licensePlate || 'N/A'}
+                                </div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -2274,6 +2350,7 @@
                         ${!driver.suspended ? `<button class="btn btn-warning btn-sm" onclick="suspendDriver('${driverId}')">⚠️ Suspender</button>` : `<button class="btn btn-primary btn-sm" onclick="activateDriver('${driverId}')">✅ Activar</button>`}
                         <button class="btn btn-secondary btn-sm" onclick="openEditDriverModal('${driverId}')">✏️ Editar</button>
                         <button class="btn btn-info btn-sm" onclick="openPhotosModal('${driverId}')">📷 Fotos</button>
+                        <button class="btn btn-info btn-sm" onclick="openDriverDetailsModal('${driverId}')">📋 Ver Detalles</button>
                         <button class="btn btn-danger btn-sm" onclick="deleteDriver('${driverId}')">🗑️ Borrar</button>
                     </div>
                 </div>
@@ -2302,14 +2379,22 @@
                 return;
             }
             
-            list.innerHTML = passengers.map(([passengerId, passenger]) => `
+            list.innerHTML = passengers.map(([passengerId, passenger]) => {
+                const profilePic = passenger.profilePhotoUrl || passenger.passengerPhotoUrl;
+                return `
                 <div class="item-card">
                     <div class="item-header">
-                        <div class="item-info">
-                            <div class="item-name">${passenger.name || 'Cliente'}</div>
-                            <div class="item-details">
-                                📧 ${passenger.email || 'N/A'}<br>
-                                📱 ${passenger.phone || 'N/A'}
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            ${profilePic ? 
+                                `<img src="${profilePic}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #e5e7eb;">` : 
+                                `<div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6, #f59e0b); display: flex; align-items: center; justify-content: center; font-size: 24px; color: white;">👤</div>`
+                            }
+                            <div class="item-info">
+                                <div class="item-name">${passenger.name || 'Cliente'}</div>
+                                <div class="item-details">
+                                    📧 ${passenger.email || 'N/A'}<br>
+                                    📱 ${passenger.phone || 'N/A'}
+                                </div>
                             </div>
                         </div>
                         ${getStatusBadge('passenger', passenger)}
@@ -2317,10 +2402,11 @@
                     <div class="actions">
                         ${!passenger.approved ? `<button class="btn btn-primary btn-sm" onclick="approvePassenger('${passengerId}')">✅ Aprobar</button>` : ''}
                         <button class="btn btn-secondary btn-sm" onclick="openEditPassengerModal('${passengerId}')">✏️ Editar</button>
+                        <button class="btn btn-info btn-sm" onclick="openPassengerDetailsModal('${passengerId}')">📋 Ver Detalles</button>
                         <button class="btn btn-danger btn-sm" onclick="deletePassenger('${passengerId}')">🗑️ Borrar</button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
         
         function approvePassenger(passengerId) {
@@ -2529,9 +2615,13 @@
             const driver = allDrivers.get(driverId);
             
             // Mostrar previsualizaciones de fotos existentes
-            if (driver?.driverPhotoUrl) {
-                document.getElementById('profilePhotoPreview').src = driver.driverPhotoUrl;
+            if (driver?.driverPhotoUrl || driver?.profilePhotoUrl) {
+                document.getElementById('profilePhotoPreview').src = driver.driverPhotoUrl || driver.profilePhotoUrl;
                 document.getElementById('profilePhotoPreview').style.display = 'block';
+            }
+            if (driver?.vehiclePhotoUrl) {
+                document.getElementById('vehiclePhotoPreview').src = driver.vehiclePhotoUrl;
+                document.getElementById('vehiclePhotoPreview').style.display = 'block';
             }
             if (driver?.licensePhotoFrontUrl) {
                 document.getElementById('licenseFrontPreview').src = driver.licensePhotoFrontUrl;
@@ -2553,6 +2643,9 @@
             // Agregar event listeners para previsualizar nuevas fotos
             document.getElementById('editProfilePhoto').onchange = function(e) {
                 previewImage(e, 'profilePhotoPreview');
+            };
+            document.getElementById('editVehiclePhoto').onchange = function(e) {
+                previewImage(e, 'vehiclePhotoPreview');
             };
             document.getElementById('editLicenseFront').onchange = function(e) {
                 previewImage(e, 'licenseFrontPreview');
@@ -2588,11 +2681,13 @@
             editingDriverPhotosId = null;
             // Limpiar inputs y previsualizaciones
             document.getElementById('editProfilePhoto').value = '';
+            document.getElementById('editVehiclePhoto').value = '';
             document.getElementById('editLicenseFront').value = '';
             document.getElementById('editLicenseBack').value = '';
             document.getElementById('editIdFront').value = '';
             document.getElementById('editIdBack').value = '';
             document.getElementById('profilePhotoPreview').style.display = 'none';
+            document.getElementById('vehiclePhotoPreview').style.display = 'none';
             document.getElementById('licenseFrontPreview').style.display = 'none';
             document.getElementById('licenseBackPreview').style.display = 'none';
             document.getElementById('idFrontPreview').style.display = 'none';
@@ -2604,6 +2699,7 @@
             
             const updates = {};
             const profileFile = document.getElementById('editProfilePhoto').files[0];
+            const vehicleFile = document.getElementById('editVehiclePhoto').files[0];
             const licenseFrontFile = document.getElementById('editLicenseFront').files[0];
             const licenseBackFile = document.getElementById('editLicenseBack').files[0];
             const idFrontFile = document.getElementById('editIdFront').files[0];
@@ -2623,7 +2719,7 @@
             };
             
             let filesProcessed = 0;
-            const totalFiles = [profileFile, licenseFrontFile, licenseBackFile, idFrontFile, idBackFile].filter(f => f).length;
+            const totalFiles = [profileFile, vehicleFile, licenseFrontFile, licenseBackFile, idFrontFile, idBackFile].filter(f => f).length;
             
             if (totalFiles === 0) {
                 alert('❌ No seleccionaste ninguna foto nueva');
@@ -2646,7 +2742,16 @@
             
             if (profileFile) {
                 processFile(profileFile, (base64) => {
-                    if (base64) updates.driverPhotoUrl = base64;
+                    if (base64) {
+                        updates.driverPhotoUrl = base64;
+                        updates.profilePhotoUrl = base64;
+                    }
+                    checkAndSave();
+                });
+            }
+            if (vehicleFile) {
+                processFile(vehicleFile, (base64) => {
+                    if (base64) updates.vehiclePhotoUrl = base64;
                     checkAndSave();
                 });
             }
@@ -2702,6 +2807,136 @@
                 database.ref('passengers/' + editingPassengerId).update(updates);
                 closeEditPassengerModal();
             }
+        }
+        
+        function closeUserDetailsModal() {
+            document.getElementById('userDetailsModal').classList.remove('show');
+        }
+        
+        function openDriverDetailsModal(driverId) {
+            const driver = allDrivers.get(driverId);
+            if (!driver) return;
+            
+            document.getElementById('detailsModalTitle').textContent = `📋 Detalles de ${driver.name || 'Conductor'}`;
+            
+            const profilePic = driver.driverPhotoUrl || driver.profilePhotoUrl;
+            const vehiclePic = driver.vehiclePhotoUrl;
+            
+            let detailsHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+                    <div>
+                        <h4 style="color: #1f2937; margin-bottom: 12px;">Información Personal</h4>
+                        <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start;">
+                            ${profilePic ? 
+                                `<img src="${profilePic}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #e5e7eb;">` : 
+                                `<div style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 48px; color: white;">👨‍✈️</div>`
+                            }
+                            <div style="flex:1;">
+                                <div style="font-size:18px; font-weight:700; color:#1f2937;">${driver.name || 'N/A'}</div>
+                                <div style="color: #6b7280; margin-top:4px;">${driver.email || 'N/A'}</div>
+                                <div style="color: #6b7280; margin-top:4px;">📱 ${driver.phone || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <div style="background: #f9fafb; padding: 16px; border-radius: 12px;">
+                            <p style="margin:6px 0;"><strong>Estado:</strong> ${driver.suspended ? '🔴 Suspendido' : (driver.approved ? '🟢 Aprobado' : '⏳ Pendiente')}</p>
+                            <p style="margin:6px 0;"><strong>Vehículo:</strong> ${driver.vehicle || 'N/A'}</p>
+                            <p style="margin:6px 0;"><strong>Placa:</strong> ${driver.licensePlate || 'N/A'}</p>
+                            <p style="margin:6px 0;"><strong>Tipo de Vehículo:</strong> ${driver.vehicleType || 'N/A'}</p>
+                            ${driver.vehicleBrand ? `<p style="margin:6px 0;"><strong>Marca:</strong> ${driver.vehicleBrand}</p>` : ''}
+                            ${driver.vehicleModel ? `<p style="margin:6px 0;"><strong>Modelo:</strong> ${driver.vehicleModel}</p>` : ''}
+                            ${driver.vehicleColor ? `<p style="margin:6px 0;"><strong>Color:</strong> ${driver.vehicleColor}</p>` : ''}
+                            ${driver.vehicleYear ? `<p style="margin:6px 0;"><strong>Año:</strong> ${driver.vehicleYear}</p>` : ''}
+                            <p style="margin:6px 0;"><strong>ID:</strong> ${driverId}</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: #1f2937; margin-bottom: 12px;">Fotos y Documentos</h4>
+                        <div class="photos-grid">
+                            ${profilePic ? `
+                                <div class="photo-item">
+                                    <img src="${profilePic}" alt="Foto de Perfil">
+                                    <p>Foto de Perfil</p>
+                                </div>` : ''}
+                            ${vehiclePic ? `
+                                <div class="photo-item">
+                                    <img src="${vehiclePic}" alt="Foto del Vehículo">
+                                    <p>Foto del Vehículo</p>
+                                </div>` : ''}
+                            ${driver.licensePhotoFrontUrl ? `
+                                <div class="photo-item">
+                                    <img src="${driver.licensePhotoFrontUrl}" alt="Licencia (Frente)">
+                                    <p>Licencia (Frente)</p>
+                                </div>` : ''}
+                            ${driver.licensePhotoBackUrl ? `
+                                <div class="photo-item">
+                                    <img src="${driver.licensePhotoBackUrl}" alt="Licencia (Reverso)">
+                                    <p>Licencia (Reverso)</p>
+                                </div>` : ''}
+                            ${driver.ciPhotoFrontUrl ? `
+                                <div class="photo-item">
+                                    <img src="${driver.ciPhotoFrontUrl}" alt="CI (Frente)">
+                                    <p>CI (Frente)</p>
+                                </div>` : ''}
+                            ${driver.ciPhotoBackUrl ? `
+                                <div class="photo-item">
+                                    <img src="${driver.ciPhotoBackUrl}" alt="CI (Reverso)">
+                                    <p>CI (Reverso)</p>
+                                </div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('detailsModalContent').innerHTML = detailsHTML;
+            document.getElementById('userDetailsModal').classList.add('show');
+        }
+        
+        function openPassengerDetailsModal(passengerId) {
+            const passenger = allPassengers.get(passengerId);
+            if (!passenger) return;
+            
+            document.getElementById('detailsModalTitle').textContent = `📋 Detalles de ${passenger.name || 'Cliente'}`;
+            
+            const profilePic = passenger.profilePhotoUrl || passenger.passengerPhotoUrl;
+            
+            let detailsHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+                    <div>
+                        <h4 style="color: #1f2937; margin-bottom: 12px;">Información Personal</h4>
+                        <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start;">
+                            ${profilePic ? 
+                                `<img src="${profilePic}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #e5e7eb;">` : 
+                                `<div style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6, #f59e0b); display: flex; align-items: center; justify-content: center; font-size: 48px; color: white;">👤</div>`
+                            }
+                            <div style="flex:1;">
+                                <div style="font-size:18px; font-weight:700; color:#1f2937;">${passenger.name || 'N/A'}</div>
+                                <div style="color: #6b7280; margin-top:4px;">${passenger.email || 'N/A'}</div>
+                                <div style="color: #6b7280; margin-top:4px;">📱 ${passenger.phone || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <div style="background: #f9fafb; padding: 16px; border-radius: 12px;">
+                            <p style="margin:6px 0;"><strong>Estado:</strong> ${passenger.approved ? '🟢 Aprobado' : '⏳ Pendiente'}</p>
+                            <p style="margin:6px 0;"><strong>Total de Viajes:</strong> ${passenger.totalRides || 0}</p>
+                            <p style="margin:6px 0;"><strong>ID:</strong> ${passengerId}</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: #1f2937; margin-bottom: 12px;">Foto de Perfil</h4>
+                        <div class="photos-grid">
+                            ${profilePic ? `
+                                <div class="photo-item">
+                                    <img src="${profilePic}" alt="Foto de Perfil">
+                                    <p>Foto de Perfil</p>
+                                </div>` : '<p style="color:#6b7280;">Sin foto de perfil</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('detailsModalContent').innerHTML = detailsHTML;
+            document.getElementById('userDetailsModal').classList.add('show');
         }
         
         function filterRides(tab) {
@@ -3000,7 +3235,189 @@
                 });
             }
         }
-        
+
+        // Variables globales para recargas
+        let allRechargeCodes = new Map();
+        let currentRechargeTab = 'all';
+
+        function generateRandomCode(length = 6) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        async function generateRechargeCodes() {
+            const amountInput = document.getElementById('rechargeAmount');
+            const codeInput = document.getElementById('rechargeCode');
+            const countInput = document.getElementById('rechargeCount');
+            
+            const amount = parseFloat(amountInput.value);
+            const customCode = codeInput.value.trim().toUpperCase();
+            const count = parseInt(countInput.value);
+            
+            if (isNaN(amount) || amount <= 0) {
+                alert('⚠️ Por favor ingrese un monto válido');
+                return;
+            }
+            
+            if (isNaN(count) || count < 1 || count > 100) {
+                alert('⚠️ Por favor ingrese una cantidad válida (1-100)');
+                return;
+            }
+            
+            if (count > 1 && customCode) {
+                alert('⚠️ No puede usar un código personalizado al generar múltiples códigos');
+                return;
+            }
+            
+            try {
+                const codesToGenerate = [];
+                
+                if (count === 1 && customCode) {
+                    // Check if code already exists
+                    const snapshot = await database.ref('rechargeCodes/' + customCode).once('value');
+                    if (snapshot.exists()) {
+                        alert('⚠️ Este código ya existe');
+                        return;
+                    }
+                    codesToGenerate.push({ code: customCode, amount });
+                } else {
+                    // Generate random codes
+                    for (let i = 0; i < count; i++) {
+                        let code;
+                        let exists = true;
+                        let attempts = 0;
+                        
+                        while (exists && attempts < 100) {
+                            code = generateRandomCode();
+                            const snap = await database.ref('rechargeCodes/' + code).once('value');
+                            exists = snap.exists();
+                            attempts++;
+                        }
+                        
+                        if (code) {
+                            codesToGenerate.push({ code, amount });
+                        }
+                    }
+                }
+                
+                // Save all codes
+                const updates = {};
+                const generatedCodes = [];
+                for (const item of codesToGenerate) {
+                    updates['rechargeCodes/' + item.code] = {
+                        amount: item.amount,
+                        used: false,
+                        createdAt: Date.now()
+                    };
+                    generatedCodes.push(item.code);
+                }
+                
+                await database.ref().update(updates);
+                
+                // Show success message with codes
+                const codesText = generatedCodes.join('\n');
+                alert('✅ ' + (generatedCodes.length === 1 ? 'Código generado!' : 'Códigos generados!') + '\n\n' + codesText);
+                
+                // Clear inputs
+                amountInput.value = '';
+                codeInput.value = '';
+                countInput.value = '1';
+                
+                // Reload list
+                loadRechargeCodes();
+            } catch (error) {
+                console.error('Error generating codes:', error);
+                alert('❌ Error al generar códigos: ' + error.message);
+            }
+        }
+
+        function loadRechargeCodes() {
+            database.ref('rechargeCodes').orderByChild('createdAt').limitToLast(200).on('value', (snapshot) => {
+                allRechargeCodes.clear();
+                snapshot.forEach((child) => {
+                    allRechargeCodes.set(child.key, child.val());
+                });
+                renderRechargeCodes();
+            });
+        }
+
+        function filterRechargeCodes(tab) {
+            currentRechargeTab = tab;
+            document.querySelectorAll('[data-recharge-tab]').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-recharge-tab="' + tab + '"]').classList.add('active');
+            renderRechargeCodes();
+        }
+
+        function renderRechargeCodes() {
+            const list = document.getElementById('rechargeCodesList');
+            let codes = Array.from(allRechargeCodes.entries());
+            
+            if (currentRechargeTab === 'available') {
+                codes = codes.filter(([id, c]) => !c.used);
+            } else if (currentRechargeTab === 'used') {
+                codes = codes.filter(([id, c]) => c.used);
+            }
+            
+            if (codes.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💳</div><p>No hay códigos en esta categoría</p></div>';
+                return;
+            }
+            
+            // Sort by date (newest first)
+            codes.sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+            
+            list.innerHTML = codes.map(([code, data]) => {
+                const usedDate = data.usedAt ? new Date(data.usedAt).toLocaleString('es-ES') : '';
+                const usedByText = data.usedBy ? data.usedBy : '';
+                const statusClass = data.used ? 'status-rejected' : 'status-approved';
+                const statusText = data.used ? 'Usado' : 'Disponible';
+                
+                return `
+                    <div class="item-card">
+                        <div class="item-header">
+                            <div class="item-info">
+                                <div class="item-name" style="font-family: monospace; font-size: 20px;">${code}</div>
+                                <div class="item-details">
+                                    💰 Monto: Bs ${data.amount}<br>
+                                    📅 Creado: ${new Date(data.createdAt).toLocaleString('es-ES')}
+                                    ${data.used ? '<br>✅ Usado el: ' + usedDate : ''}
+                                    ${usedByText ? '<br>👤 Usado por: ' + usedByText : ''}
+                                </div>
+                            </div>
+                            <div class="status-badge ${statusClass}">${statusText}</div>
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-secondary btn-sm" onclick="copyCode('${code}')">📋 Copiar</button>
+                            ${!data.used ? `<button class="btn btn-danger btn-sm" onclick="deleteRechargeCode('${code}')">🗑️ Eliminar</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function copyCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                alert('✅ Código copiado: ' + code);
+            }).catch(err => {
+                console.error('Error copying code:', err);
+                alert('❌ Error al copiar');
+            });
+        }
+
+        function deleteRechargeCode(code) {
+            if (confirm('¿Estás seguro de eliminar este código?')) {
+                database.ref('rechargeCodes/' + code).remove().then(() => {
+                    alert('✅ Código eliminado');
+                }).catch(err => {
+                    alert('❌ Error al eliminar: ' + err.message);
+                });
+            }
+        }
+
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) {
