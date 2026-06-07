@@ -2328,15 +2328,15 @@
         }
         
         function deletePassenger(passengerId) {
-            if (confirm('¿Estás seguro de borrar a este cliente? Esta acción no se puede deshacer.')) {
+            if (confirm('¿Estás seguro de borrar a este cliente?\n\n✅ Presiona OK para borrar COMPLETAMENTE (requiere chatbot corriendo)\n\n⚠️ Si el chatbot no está corriendo, te dará una opción alternativa')) {
                 fetch(`http://localhost:3000/api/delete-passenger/${passengerId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 })
-                .then(response => response.json())
-                .then(data => {
+                .then(async response => {
+                    const data = await response.json();
                     if (data.success) {
                         alert('✅ ' + data.message);
                     } else {
@@ -2345,7 +2345,11 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('❌ Error al borrar: Asegúrate que el chatbot esté ejecutándose');
+                    const useSimpleDelete = confirm('❌ Chatbot no está corriendo!\n\n⚠️ ¿Quieres borrar SOLO del Realtime Database?\n(Después podrás volver a registrar, pero la cuenta de Firebase Auth quedará.)');
+                    if (useSimpleDelete) {
+                        database.ref('passengers/' + passengerId).remove();
+                        alert('✅ Cliente borrado del Realtime Database.\n⚠️ La cuenta de Firebase Auth aún existe, pero puedes volver a registrar.');
+                    }
                 });
             }
         }
@@ -2459,15 +2463,15 @@
         }
         
         function deleteDriver(driverId) {
-            if (confirm('¿Estás seguro de borrar a este conductor? Esta acción no se puede deshacer.')) {
+            if (confirm('¿Estás seguro de borrar a este conductor?\n\n✅ Presiona OK para borrar COMPLETAMENTE (requiere chatbot corriendo)\n\n⚠️ Si el chatbot no está corriendo, te dará una opción alternativa')) {
                 fetch(`http://localhost:3000/api/delete-driver/${driverId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 })
-                .then(response => response.json())
-                .then(data => {
+                .then(async response => {
+                    const data = await response.json();
                     if (data.success) {
                         alert('✅ ' + data.message);
                     } else {
@@ -2476,7 +2480,12 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('❌ Error al borrar: Asegúrate que el chatbot esté ejecutándose');
+                    const useSimpleDelete = confirm('❌ Chatbot no está corriendo!\n\n⚠️ ¿Quieres borrar SOLO del Realtime Database?\n(Después podrás volver a registrar, pero la cuenta de Firebase Auth quedará.)');
+                    if (useSimpleDelete) {
+                        database.ref('drivers/' + driverId).remove();
+                        database.ref('activeDrivers/' + driverId).remove();
+                        alert('✅ Conductor borrado del Realtime Database.\n⚠️ La cuenta de Firebase Auth aún existe, pero puedes volver a registrar.');
+                    }
                 });
             }
         }
@@ -2925,12 +2934,10 @@
                 assignedAt: Date.now()
             });
 
-            // Create active ride
-            const newRideRef = database.ref('activeRides').push();
-            const rideId = newRideRef.key;
-            
+            // Create active ride - USAMOS EL MISMO ID QUE EL RIDE REQUEST
             const rideData = {
-                id: rideId,
+                id: requestId,
+                passengerId: request.passengerId || `whatsapp_${request.passengerPhone}`,
                 passengerName: request.passengerName,
                 passengerPhone: request.passengerPhone,
                 pickup: request.pickup,
@@ -2938,18 +2945,32 @@
                 serviceType: request.serviceType,
                 driverId: driverId,
                 driverName: driver?.name,
+                driverData: {
+                    id: driverId,
+                    name: driver?.name,
+                    vehicle: driver?.vehicle,
+                    licensePlate: driver?.licensePlate,
+                    phone: driver?.phone,
+                    driverPhotoUrl: driver?.driverPhotoUrl,
+                    vehiclePhotoUrl: driver?.vehiclePhotoUrl
+                },
                 status: 'accepted',
                 source: 'whatsapp',
-                fare: 0,
+                fare: request.fare || 0,
+                distanceKm: request.distanceKm || 0,
+                vehicleType: request.vehicleType || 'auto',
                 createdAt: Date.now()
             };
             
-            // Si la solicitud tiene ubicación GPS, añadirla
+            // Añadir ubicaciones si están disponibles
             if (request.pickupLocation) {
                 rideData.pickupLocation = request.pickupLocation;
             }
+            if (request.destLocation) {
+                rideData.destLocation = request.destLocation;
+            }
 
-            newRideRef.set(rideData);
+            database.ref('activeRides/' + requestId).set(rideData);
 
             // Send notification to driver
             database.ref('drivers/' + driverId + '/notifications').push({
