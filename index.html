@@ -14,6 +14,7 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -295,6 +296,36 @@
         .status-completed {
             background: #d1fae5;
             color: #059669;
+        }
+        
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .photo-item {
+            text-align: center;
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .photo-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .photo-item p {
+            margin: 0;
+            font-size: 14px;
+            color: #374151;
+            font-weight: 600;
         }
         
         .status-rejected {
@@ -713,8 +744,8 @@
         </div>
         
         <div class="menu-section-title">Configuración</div>
-        <div class="menu-item" data-page="settings" onclick="showPage('settings')">
-            <span>⚙️</span> Configuración del Sistema
+        <div class="menu-item" data-page="zones" onclick="showPage('zones')">
+            <span>🗺️</span> Gestión de Zonas
         </div>
         <div class="menu-item" data-page="app-versions" onclick="showPage('app-versions')">
             <span>📱</span> Versiones de la App
@@ -1169,97 +1200,123 @@
             </div>
         </div>
         
-        <!-- Settings -->
-        <div class="page-section" id="page-settings">
+        <!-- Zones Management -->
+        <div class="page-section" id="page-zones">
             <div class="header">
-                <h2>⚙️ Configuración del Sistema</h2>
+                <h2>🗺️ Gestión de Zonas y Configuración Geográfica</h2>
             </div>
             
+            <!-- System Configuration -->
             <div class="section">
-                <h3>Tarifas</h3>
+                <h3>⚙️ Configuración General del Sistema</h3>
                 <div class="settings-grid">
                     <div class="settings-card">
-                        <h4>Tarifa Básica</h4>
+                        <h4>Comisión y Tarifa Base</h4>
                         <div class="form-group">
-                            <label>Tarifa Mínima (Bs)</label>
-                            <input type="number" id="minFare" value="10" step="0.5">
-                        </div>
-                    </div>
-                    <div class="settings-card">
-                        <h4>Tarifa por Kilómetro</h4>
-                        <div class="form-group">
-                            <label>Tarifa Día (Bs/km)</label>
-                            <input type="number" id="dayRatePerKm" value="3" step="0.5">
+                            <label>Comisión Predeterminada (%)</label>
+                            <input type="number" id="defaultCommission" value="10" step="0.5" min="0" max="100">
                         </div>
                         <div class="form-group">
-                            <label>Tarifa Noche (Bs/km)</label>
-                            <input type="number" id="nightRatePerKm" value="4" step="0.5">
-                        </div>
-                    </div>
-                    <div class="settings-card">
-                        <h4>Tarifa por Minuto</h4>
-                        <div class="form-group">
-                            <label>Tarifa Día (Bs/min)</label>
-                            <input type="number" id="dayRatePerMin" value="0.5" step="0.1">
-                        </div>
-                        <div class="form-group">
-                            <label>Tarifa Noche (Bs/min)</label>
-                            <input type="number" id="nightRatePerMin" value="0.7" step="0.1">
+                            <label>Tarifa Base Predeterminada (Bs)</label>
+                            <input type="number" id="defaultBaseFare" value="10" step="0.5">
                         </div>
                     </div>
                 </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                    <button class="btn btn-primary" onclick="saveSystemConfig()">💾 Guardar Configuración</button>
+                </div>
             </div>
             
+            <!-- Add Zone -->
             <div class="section">
-                <h3>Tarifas Especiales</h3>
+                <h3>➕ Agregar/Editar Zona</h3>
                 <div class="settings-grid">
                     <div class="settings-card">
-                        <h4>Horario Nocturno</h4>
+                        <h4>Datos de la Zona</h4>
                         <div class="form-group">
-                            <label>Inicio (ej: 21:00)</label>
-                            <input type="time" id="nightStartTime" value="21:00">
+                            <label>ID de la Zona (único)</label>
+                            <input type="text" id="zoneId" placeholder="ej: zone_centro_sc">
                         </div>
                         <div class="form-group">
-                            <label>Fin (ej: 06:00)</label>
-                            <input type="time" id="nightEndTime" value="06:00">
+                            <label>Nombre de la Zona</label>
+                            <input type="text" id="zoneName" placeholder="ej: Centro">
+                        </div>
+                        <div class="form-group">
+                            <label>Departamento</label>
+                            <input type="text" id="zoneDepartment" placeholder="ej: Santa Cruz">
+                        </div>
+                        <div class="form-group">
+                            <label>Municipio</label>
+                            <input type="text" id="zoneMunicipality" placeholder="ej: Santa Cruz de la Sierra">
                         </div>
                     </div>
                     <div class="settings-card">
-                        <h4>Tarifa Especial (Eventos)</h4>
+                        <h4>Tarifas y Comisión</h4>
                         <div class="form-group">
-                            <label>Multiplicador (ej: 1.5 = 50% extra)</label>
-                            <input type="number" id="specialMultiplier" value="1.5" step="0.1">
+                            <label>Tarifa Base (Bs)</label>
+                            <input type="number" id="zoneBaseFare" value="10" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Comisión (%)</label>
+                            <input type="number" id="zoneCommission" value="10" step="0.5" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa por Kilómetro (Bs)</label>
+                            <input type="number" id="zonePerKm" value="3" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa por Minuto (Bs)</label>
+                            <input type="number" id="zonePerMin" value="0.5" step="0.1">
                         </div>
                     </div>
                 </div>
+                
+                <!-- Map for Polygon -->
+                <h4 style="margin-top: 24px; margin-bottom: 12px;">🗺️ Dibujar Área de la Zona (polígono)</h4>
+                <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">Haz clic en el mapa para agregar puntos. Doble clic para finalizar el polígono.</p>
+                <div id="zoneMap" style="height: 400px; border-radius: 12px; margin-bottom: 16px;"></div>
+                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <button class="btn btn-secondary" onclick="clearZonePolygon()">🔄 Limpiar Polígono</button>
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end;">
+                    <button class="btn btn-danger" onclick="resetZoneForm()">❌ Cancelar</button>
+                    <button class="btn btn-primary" onclick="saveZone()" style="margin-left: 12px;">💾 Guardar Zona</button>
+                </div>
             </div>
             
+            <!-- Filters -->
             <div class="section">
-                <h3>Comisiones</h3>
+                <h3>🔍 Filtrar Zonas</h3>
                 <div class="settings-grid">
                     <div class="settings-card">
-                        <h4>Comisión por Carrera</h4>
                         <div class="form-group">
-                            <label>Porcentaje de Comisión (%)</label>
-                            <input type="number" id="commissionPercentage" value="15" step="1" min="0" max="100">
+                            <label>Filtrar por Departamento</label>
+                            <select id="filterDepartment" onchange="loadZones()">
+                                <option value="">Todos los Departamentos</option>
+                            </select>
                         </div>
-                        <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">Ejemplo: 15% significa que la empresa se queda con el 15% de cada carrera</p>
+                    </div>
+                    <div class="settings-card">
+                        <div class="form-group">
+                            <label>Filtrar por Municipio</label>
+                            <select id="filterMunicipality" onchange="loadZones()">
+                                <option value="">Todos los Municipios</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
             
+            <!-- Zones List -->
             <div class="section">
-                <h3>Regiones</h3>
-                <div class="form-group">
-                    <label>Agregar Nueva Región</label>
-                    <input type="text" id="newRegionName" placeholder="Nombre de la región (ej: Montero)">
-                </div>
-                <button class="btn btn-primary btn-sm" onclick="addRegion()">➕ Agregar Región</button>
-                <div class="list-container" id="regionsList" style="margin-top: 16px;"></div>
+                <h3>📋 Lista de Zonas</h3>
+                <div class="list-container" id="zonesList"></div>
             </div>
-            
+
+            <!-- Special Fares by Destination -->
             <div class="section">
-                <h3>Tarifas Especiales por Destino</h3>
+                <h3>📍 Tarifas Especiales por Destino</h3>
                 <div class="settings-grid">
                     <div class="settings-card">
                         <div class="form-group">
@@ -1283,9 +1340,10 @@
                 </div>
                 <div class="list-container" id="specialDestinationsList" style="margin-top: 16px;"></div>
             </div>
-            
+
+            <!-- Special Fares by Route -->
             <div class="section">
-                <h3>Tarifas Especiales por Rutas</h3>
+                <h3>🛣️ Tarifas Especiales por Rutas</h3>
                 <div class="settings-grid">
                     <div class="settings-card">
                         <div class="form-group">
@@ -1305,9 +1363,10 @@
                 </div>
                 <div class="list-container" id="specialRoutesList" style="margin-top: 16px;"></div>
             </div>
-            
-            <div style="display: flex; justify-content: flex-end;">
-                <button class="btn btn-primary" onclick="saveSystemSettings()">💾 Guardar Configuración</button>
+
+            <!-- Save Button -->
+            <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+                <button class="btn btn-primary" style="font-size: 16px; padding: 12px 32px;" onclick="saveAllConfig()">💾 Guardar Todo</button>
             </div>
         </div>
         
@@ -1442,9 +1501,14 @@
             
             <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px;">
                 <div class="form-group" style="margin: 0;">
-                    <label>Carnet de Identidad - Reverso</label>
+                    <label>CI (Reverso)</label>
                     <input type="file" id="editIdBack" accept="image/*" style="margin-bottom: 8px;">
                     <img id="idBackPreview" style="max-width: 100%; border-radius: 8px; display: none;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label>RUAT</label>
+                    <input type="file" id="editRuatPhoto" accept="image/*" style="margin-bottom: 8px;">
+                    <img id="ruatPhotoPreview" style="max-width: 100%; border-radius: 8px; display: none;">
                 </div>
             </div>
             
@@ -2639,6 +2703,10 @@
                 document.getElementById('idBackPreview').src = driver.ciPhotoBackUrl;
                 document.getElementById('idBackPreview').style.display = 'block';
             }
+            if (driver?.ruatPhotoUrl) {
+                document.getElementById('ruatPhotoPreview').src = driver.ruatPhotoUrl;
+                document.getElementById('ruatPhotoPreview').style.display = 'block';
+            }
             
             // Agregar event listeners para previsualizar nuevas fotos
             document.getElementById('editProfilePhoto').onchange = function(e) {
@@ -2658,6 +2726,9 @@
             };
             document.getElementById('editIdBack').onchange = function(e) {
                 previewImage(e, 'idBackPreview');
+            };
+            document.getElementById('editRuatPhoto').onchange = function(e) {
+                previewImage(e, 'ruatPhotoPreview');
             };
             
             document.getElementById('photosModal').classList.add('show');
@@ -2686,12 +2757,14 @@
             document.getElementById('editLicenseBack').value = '';
             document.getElementById('editIdFront').value = '';
             document.getElementById('editIdBack').value = '';
+            document.getElementById('editRuatPhoto').value = '';
             document.getElementById('profilePhotoPreview').style.display = 'none';
             document.getElementById('vehiclePhotoPreview').style.display = 'none';
             document.getElementById('licenseFrontPreview').style.display = 'none';
             document.getElementById('licenseBackPreview').style.display = 'none';
             document.getElementById('idFrontPreview').style.display = 'none';
             document.getElementById('idBackPreview').style.display = 'none';
+            document.getElementById('ruatPhotoPreview').style.display = 'none';
         }
         
         function saveDriverPhotos() {
@@ -2704,6 +2777,7 @@
             const licenseBackFile = document.getElementById('editLicenseBack').files[0];
             const idFrontFile = document.getElementById('editIdFront').files[0];
             const idBackFile = document.getElementById('editIdBack').files[0];
+            const ruatFile = document.getElementById('editRuatPhoto').files[0];
             
             // Función helper para convertir archivo a base64
             const processFile = (file, callback) => {
@@ -2719,7 +2793,7 @@
             };
             
             let filesProcessed = 0;
-            const totalFiles = [profileFile, vehicleFile, licenseFrontFile, licenseBackFile, idFrontFile, idBackFile].filter(f => f).length;
+            const totalFiles = [profileFile, vehicleFile, licenseFrontFile, licenseBackFile, idFrontFile, idBackFile, ruatFile].filter(f => f).length;
             
             if (totalFiles === 0) {
                 alert('❌ No seleccionaste ninguna foto nueva');
@@ -2776,6 +2850,12 @@
             if (idBackFile) {
                 processFile(idBackFile, (base64) => {
                     if (base64) updates.ciPhotoBackUrl = base64;
+                    checkAndSave();
+                });
+            }
+            if (ruatFile) {
+                processFile(ruatFile, (base64) => {
+                    if (base64) updates.ruatPhotoUrl = base64;
                     checkAndSave();
                 });
             }
@@ -2882,6 +2962,11 @@
                                 <div class="photo-item">
                                     <img src="${driver.ciPhotoBackUrl}" alt="CI (Reverso)">
                                     <p>CI (Reverso)</p>
+                                </div>` : ''}
+                            ${driver.ruatPhotoUrl ? `
+                                <div class="photo-item">
+                                    <img src="${driver.ruatPhotoUrl}" alt="RUAT">
+                                    <p>RUAT</p>
                                 </div>` : ''}
                         </div>
                     </div>
@@ -3426,8 +3511,266 @@
             });
         });
         
+        // ZONES MANAGEMENT
+        let zoneMap = null;
+        let zonePolygon = null;
+        let zonePolygonPoints = [];
+        let zones = new Map();
+        let systemConfig = {};
+
+        function initZoneMap() {
+            if (zoneMap) {
+                zoneMap.remove();
+            }
+            zoneMap = L.map('zoneMap').setView([-17.7833, -63.1821], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(zoneMap);
+
+            zoneMap.on('click', function(e) {
+                addPointToZonePolygon(e.latlng);
+            });
+        }
+
+        function addPointToZonePolygon(latlng) {
+            zonePolygonPoints.push([latlng.lat, latlng.lng]);
+            updateZonePolygon();
+        }
+
+        function updateZonePolygon() {
+            if (zonePolygon) {
+                zoneMap.removeLayer(zonePolygon);
+            }
+            if (zonePolygonPoints.length > 0) {
+                zonePolygon = L.polygon(zonePolygonPoints, {
+                    color: '#3b82f6',
+                    fillColor: '#3b82f6',
+                    fillOpacity: 0.3
+                }).addTo(zoneMap);
+                zoneMap.fitBounds(zonePolygon.getBounds());
+            }
+        }
+
+        function clearZonePolygon() {
+            zonePolygonPoints = [];
+            if (zonePolygon) {
+                zoneMap.removeLayer(zonePolygon);
+                zonePolygon = null;
+            }
+        }
+
+        function resetZoneForm() {
+            document.getElementById('zoneId').value = '';
+            document.getElementById('zoneName').value = '';
+            document.getElementById('zoneDepartment').value = '';
+            document.getElementById('zoneMunicipality').value = '';
+            document.getElementById('zoneBaseFare').value = '10';
+            document.getElementById('zoneCommission').value = '10';
+            document.getElementById('zonePerKm').value = '3';
+            document.getElementById('zonePerMin').value = '0.5';
+            clearZonePolygon();
+        }
+
+        function loadSystemConfig() {
+            database.ref('systemConfig').once('value', (snapshot) => {
+                systemConfig = snapshot.val() || {};
+                document.getElementById('defaultCommission').value = (systemConfig.defaultCommission * 100) || 10;
+                document.getElementById('defaultBaseFare').value = systemConfig.defaultBaseFare || 10;
+                specialDestinations = systemConfig.specialDestinations || [];
+                specialRoutes = systemConfig.specialRoutes || [];
+                renderSpecialDestinations();
+                renderSpecialRoutes();
+            });
+        }
+
+        function saveSystemConfig() {
+            const config = {
+                defaultCommission: parseFloat(document.getElementById('defaultCommission').value) / 100,
+                defaultBaseFare: parseFloat(document.getElementById('defaultBaseFare').value),
+                currency: 'Bs',
+                specialDestinations: specialDestinations,
+                specialRoutes: specialRoutes,
+                updatedAt: Date.now()
+            };
+            database.ref('systemConfig').set(config)
+                .then(() => {
+                    alert('✅ Configuración guardada exitosamente!');
+                })
+                .catch(err => {
+                    alert('❌ Error: ' + err.message);
+                });
+        }
+
+        function saveAllConfig() {
+            // Save system config
+            saveSystemConfig();
+            // Note: Zones are saved individually when you click "💾 Guardar Zona"
+            alert('✅ Configuración general y tarifas especiales guardadas! Las zonas se guardan individualmente.');
+        }
+
+        function loadZones() {
+            database.ref('zones').on('value', (snapshot) => {
+                zones.clear();
+                snapshot.forEach(child => {
+                    zones.set(child.key, child.val());
+                });
+                updateFilters();
+                renderZones();
+            });
+        }
+
+        function updateFilters() {
+            const departmentSelect = document.getElementById('filterDepartment');
+            const municipalitySelect = document.getElementById('filterMunicipality');
+            const departments = new Set(['']);
+            const municipalities = new Set(['']);
+            
+            zones.forEach(zone => {
+                if (zone.department) departments.add(zone.department);
+                if (zone.municipality) municipalities.add(zone.municipality);
+            });
+
+            const currentDept = departmentSelect.value;
+            const currentMuni = municipalitySelect.value;
+
+            departmentSelect.innerHTML = Array.from(departments).map(d => 
+                `<option value="${d}">${d || 'Todos los Departamentos'}</option>`
+            ).join('');
+            
+            municipalitySelect.innerHTML = Array.from(municipalities).map(m => 
+                `<option value="${m}">${m || 'Todos los Municipios'}</option>`
+            ).join('');
+
+            if (currentDept) departmentSelect.value = currentDept;
+            if (currentMuni) municipalitySelect.value = currentMuni;
+        }
+
+        function renderZones() {
+            const list = document.getElementById('zonesList');
+            const filterDept = document.getElementById('filterDepartment').value;
+            const filterMuni = document.getElementById('filterMunicipality').value;
+
+            let filteredZones = Array.from(zones.entries());
+            if (filterDept) {
+                filteredZones = filteredZones.filter(([id, z]) => z.department === filterDept);
+            }
+            if (filterMuni) {
+                filteredZones = filteredZones.filter(([id, z]) => z.municipality === filterMuni);
+            }
+
+            if (filteredZones.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📍</div>
+                        <p>No hay zonas configuradas</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = filteredZones.map(([zoneId, zone]) => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-info">
+                            <div class="item-name">${zone.name}</div>
+                            <div class="item-details">
+                                📍 Departamento: ${zone.department || 'N/A'}<br>
+                                🏙️ Municipio: ${zone.municipality || 'N/A'}<br>
+                                💰 Tarifa Base: Bs ${zone.baseFare || 0}<br>
+                                📊 Comisión: ${(zone.commission * 100).toFixed(1)}%<br>
+                                🚗 Tarifa/km: Bs ${zone.perKmRate || 0}<br>
+                                ⏱️ Tarifa/min: Bs ${zone.perMinRate || 0}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-secondary btn-sm" onclick="editZone('${zoneId}')">✏️ Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteZone('${zoneId}')">🗑️ Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveZone() {
+            const zoneId = document.getElementById('zoneId').value.trim();
+            if (!zoneId) {
+                alert('❌ Por favor ingresa un ID para la zona');
+                return;
+            }
+
+            const zoneData = {
+                id: zoneId,
+                name: document.getElementById('zoneName').value.trim(),
+                department: document.getElementById('zoneDepartment').value.trim(),
+                municipality: document.getElementById('zoneMunicipality').value.trim(),
+                baseFare: parseFloat(document.getElementById('zoneBaseFare').value),
+                commission: parseFloat(document.getElementById('zoneCommission').value) / 100,
+                perKmRate: parseFloat(document.getElementById('zonePerKm').value),
+                perMinRate: parseFloat(document.getElementById('zonePerMin').value),
+                coordinates: zonePolygonPoints.map(p => ({ lat: p[0], lng: p[1] })),
+                updatedAt: Date.now()
+            };
+
+            database.ref('zones/' + zoneId).set(zoneData)
+                .then(() => {
+                    alert('✅ Zona guardada exitosamente!');
+                    resetZoneForm();
+                })
+                .catch(err => {
+                    alert('❌ Error al guardar zona: ' + err.message);
+                });
+        }
+
+        function editZone(zoneId) {
+            const zone = zones.get(zoneId);
+            if (!zone) return;
+
+            document.getElementById('zoneId').value = zone.id;
+            document.getElementById('zoneName').value = zone.name || '';
+            document.getElementById('zoneDepartment').value = zone.department || '';
+            document.getElementById('zoneMunicipality').value = zone.municipality || '';
+            document.getElementById('zoneBaseFare').value = zone.baseFare || 0;
+            document.getElementById('zoneCommission').value = (zone.commission * 100) || 10;
+            document.getElementById('zonePerKm').value = zone.perKmRate || 0;
+            document.getElementById('zonePerMin').value = zone.perMinRate || 0;
+
+            zonePolygonPoints = (zone.coordinates || []).map(c => [c.lat, c.lng]);
+            updateZonePolygon();
+        }
+
+        function deleteZone(zoneId) {
+            if (confirm('¿Estás seguro de eliminar esta zona?')) {
+                database.ref('zones/' + zoneId).remove()
+                    .then(() => {
+                        alert('✅ Zona eliminada');
+                    })
+                    .catch(err => {
+                        alert('❌ Error: ' + err.message);
+                    });
+            }
+        }
+
+        function showPage(page) {
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            document.getElementById('page-' + page).classList.add('active');
+            document.querySelector('[data-page="' + page + '"]').classList.add('active');
+
+            if (page === 'zones') {
+                setTimeout(initZoneMap, 100);
+            }
+        }
+
         initMap();
         loadSystemSettings();
+        loadSystemConfig();
+        loadZones();
     </script>
 </body>
 </html>
