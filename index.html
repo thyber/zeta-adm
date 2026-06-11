@@ -747,6 +747,9 @@
         <div class="menu-item" data-page="zones" onclick="showPage('zones')">
             <span>🗺️</span> Gestión de Zonas
         </div>
+        <div class="menu-item" data-page="manual-rides" onclick="showPage('manual-rides')">
+            <span>💾</span> Carreras Manuales
+        </div>
         <div class="menu-item" data-page="app-versions" onclick="showPage('app-versions')">
             <span>📱</span> Versiones de la App
         </div>
@@ -1251,22 +1254,55 @@
                         </div>
                     </div>
                     <div class="settings-card">
-                        <h4>Tarifas y Comisión</h4>
-                        <div class="form-group">
-                            <label>Tarifa Base (Bs)</label>
-                            <input type="number" id="zoneBaseFare" value="10" step="0.5">
-                        </div>
+                        <h4>Comisión</h4>
                         <div class="form-group">
                             <label>Comisión (%)</label>
                             <input type="number" id="zoneCommission" value="10" step="0.5" min="0" max="100">
                         </div>
+                    </div>
+                    <div class="settings-card">
+                        <h4>🛵 Tarifas - Moto</h4>
+                        <div class="form-group">
+                            <label>Tarifa Base (Bs)</label>
+                            <input type="number" id="zoneMotoBaseFare" value="7" step="0.5">
+                        </div>
                         <div class="form-group">
                             <label>Tarifa por Kilómetro (Bs)</label>
-                            <input type="number" id="zonePerKm" value="3" step="0.5">
+                            <input type="number" id="zoneMotoPerKm" value="2.1" step="0.5">
                         </div>
                         <div class="form-group">
                             <label>Tarifa por Minuto (Bs)</label>
-                            <input type="number" id="zonePerMin" value="0.5" step="0.1">
+                            <input type="number" id="zoneMotoPerMin" value="0.35" step="0.1">
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <h4>🚗 Tarifas - Auto</h4>
+                        <div class="form-group">
+                            <label>Tarifa Base (Bs)</label>
+                            <input type="number" id="zoneAutoBaseFare" value="10" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa por Kilómetro (Bs)</label>
+                            <input type="number" id="zoneAutoPerKm" value="3" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa por Minuto (Bs)</label>
+                            <input type="number" id="zoneAutoPerMin" value="0.5" step="0.1">
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <h4>🚐 Tarifas - Vagoneta</h4>
+                        <div class="form-group">
+                            <label>Tarifa Base (Bs)</label>
+                            <input type="number" id="zoneVagonetaBaseFare" value="13" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa por Kilómetro (Bs)</label>
+                            <input type="number" id="zoneVagonetaPerKm" value="3.9" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa por Minuto (Bs)</label>
+                            <input type="number" id="zoneVagonetaPerMin" value="0.65" step="0.1">
                         </div>
                     </div>
                 </div>
@@ -1367,6 +1403,18 @@
             <!-- Save Button -->
             <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
                 <button class="btn btn-primary" style="font-size: 16px; padding: 12px 32px;" onclick="saveAllConfig()">💾 Guardar Todo</button>
+            </div>
+        </div>
+        
+        <!-- Manual Rides -->
+        <div class="page-section" id="page-manual-rides">
+            <div class="header">
+                <h2>💾 Carreras Manuales</h2>
+            </div>
+            
+            <div class="section">
+                <h3>📋 Lista de Carreras Manuales</h3>
+                <div class="list-container" id="manualRidesList"></div>
             </div>
         </div>
         
@@ -3564,10 +3612,21 @@
             document.getElementById('zoneName').value = '';
             document.getElementById('zoneDepartment').value = '';
             document.getElementById('zoneMunicipality').value = '';
-            document.getElementById('zoneBaseFare').value = '10';
             document.getElementById('zoneCommission').value = '10';
-            document.getElementById('zonePerKm').value = '3';
-            document.getElementById('zonePerMin').value = '0.5';
+
+            // Tarifas
+            document.getElementById('zoneMotoBaseFare').value = '7';
+            document.getElementById('zoneMotoPerKm').value = '2.1';
+            document.getElementById('zoneMotoPerMin').value = '0.35';
+
+            document.getElementById('zoneAutoBaseFare').value = '10';
+            document.getElementById('zoneAutoPerKm').value = '3';
+            document.getElementById('zoneAutoPerMin').value = '0.5';
+
+            document.getElementById('zoneVagonetaBaseFare').value = '13';
+            document.getElementById('zoneVagonetaPerKm').value = '3.9';
+            document.getElementById('zoneVagonetaPerMin').value = '0.65';
+
             clearZonePolygon();
         }
 
@@ -3676,10 +3735,10 @@
                             <div class="item-details">
                                 📍 Departamento: ${zone.department || 'N/A'}<br>
                                 🏙️ Municipio: ${zone.municipality || 'N/A'}<br>
-                                💰 Tarifa Base: Bs ${zone.baseFare || 0}<br>
                                 📊 Comisión: ${(zone.commission * 100).toFixed(1)}%<br>
-                                🚗 Tarifa/km: Bs ${zone.perKmRate || 0}<br>
-                                ⏱️ Tarifa/min: Bs ${zone.perMinRate || 0}
+                                🛵 Moto: Base Bs ${(zone.tariffs?.moto?.baseFare || zone.baseFare * 0.7).toFixed(1)} / Km Bs ${(zone.tariffs?.moto?.perKmRate || zone.perKmRate * 0.7).toFixed(1)} / Min Bs ${(zone.tariffs?.moto?.perMinRate || zone.perMinRate * 0.7).toFixed(1)}<br>
+                                🚗 Auto: Base Bs ${(zone.tariffs?.auto?.baseFare || zone.baseFare).toFixed(1)} / Km Bs ${(zone.tariffs?.auto?.perKmRate || zone.perKmRate).toFixed(1)} / Min Bs ${(zone.tariffs?.auto?.perMinRate || zone.perMinRate).toFixed(1)}<br>
+                                🚐 Vagoneta: Base Bs ${(zone.tariffs?.vagoneta?.baseFare || zone.baseFare * 1.3).toFixed(1)} / Km Bs ${(zone.tariffs?.vagoneta?.perKmRate || zone.perKmRate * 1.3).toFixed(1)} / Min Bs ${(zone.tariffs?.vagoneta?.perMinRate || zone.perMinRate * 1.3).toFixed(1)}
                             </div>
                         </div>
                     </div>
@@ -3703,10 +3762,24 @@
                 name: document.getElementById('zoneName').value.trim(),
                 department: document.getElementById('zoneDepartment').value.trim(),
                 municipality: document.getElementById('zoneMunicipality').value.trim(),
-                baseFare: parseFloat(document.getElementById('zoneBaseFare').value),
                 commission: parseFloat(document.getElementById('zoneCommission').value) / 100,
-                perKmRate: parseFloat(document.getElementById('zonePerKm').value),
-                perMinRate: parseFloat(document.getElementById('zonePerMin').value),
+                tariffs: {
+                    moto: {
+                        baseFare: parseFloat(document.getElementById('zoneMotoBaseFare').value),
+                        perKmRate: parseFloat(document.getElementById('zoneMotoPerKm').value),
+                        perMinRate: parseFloat(document.getElementById('zoneMotoPerMin').value)
+                    },
+                    auto: {
+                        baseFare: parseFloat(document.getElementById('zoneAutoBaseFare').value),
+                        perKmRate: parseFloat(document.getElementById('zoneAutoPerKm').value),
+                        perMinRate: parseFloat(document.getElementById('zoneAutoPerMin').value)
+                    },
+                    vagoneta: {
+                        baseFare: parseFloat(document.getElementById('zoneVagonetaBaseFare').value),
+                        perKmRate: parseFloat(document.getElementById('zoneVagonetaPerKm').value),
+                        perMinRate: parseFloat(document.getElementById('zoneVagonetaPerMin').value)
+                    }
+                },
                 coordinates: zonePolygonPoints.map(p => ({ lat: p[0], lng: p[1] })),
                 updatedAt: Date.now()
             };
@@ -3729,10 +3802,20 @@
             document.getElementById('zoneName').value = zone.name || '';
             document.getElementById('zoneDepartment').value = zone.department || '';
             document.getElementById('zoneMunicipality').value = zone.municipality || '';
-            document.getElementById('zoneBaseFare').value = zone.baseFare || 0;
             document.getElementById('zoneCommission').value = (zone.commission * 100) || 10;
-            document.getElementById('zonePerKm').value = zone.perKmRate || 0;
-            document.getElementById('zonePerMin').value = zone.perMinRate || 0;
+
+            // Tarifas
+            document.getElementById('zoneMotoBaseFare').value = zone.tariffs?.moto?.baseFare || zone.baseFare * 0.7 || 7;
+            document.getElementById('zoneMotoPerKm').value = zone.tariffs?.moto?.perKmRate || zone.perKmRate * 0.7 || 2.1;
+            document.getElementById('zoneMotoPerMin').value = zone.tariffs?.moto?.perMinRate || zone.perMinRate * 0.7 || 0.35;
+
+            document.getElementById('zoneAutoBaseFare').value = zone.tariffs?.auto?.baseFare || zone.baseFare || 10;
+            document.getElementById('zoneAutoPerKm').value = zone.tariffs?.auto?.perKmRate || zone.perKmRate || 3;
+            document.getElementById('zoneAutoPerMin').value = zone.tariffs?.auto?.perMinRate || zone.perMinRate || 0.5;
+
+            document.getElementById('zoneVagonetaBaseFare').value = zone.tariffs?.vagoneta?.baseFare || zone.baseFare * 1.3 || 13;
+            document.getElementById('zoneVagonetaPerKm').value = zone.tariffs?.vagoneta?.perKmRate || zone.perKmRate * 1.3 || 3.9;
+            document.getElementById('zoneVagonetaPerMin').value = zone.tariffs?.vagoneta?.perMinRate || zone.perMinRate * 1.3 || 0.65;
 
             zonePolygonPoints = (zone.coordinates || []).map(c => [c.lat, c.lng]);
             updateZonePolygon();
@@ -3767,10 +3850,53 @@
             }
         }
 
+        function loadManualRides() {
+            database.ref('manualRides').on('value', (snapshot) => {
+                const rides = [];
+                snapshot.forEach(child => {
+                    rides.push({ id: child.key, ...child.val() });
+                });
+                renderManualRides(rides);
+            });
+        }
+
+        function renderManualRides(rides) {
+            const list = document.getElementById('manualRidesList');
+            if (rides.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💾</div>
+                        <p>No hay carreras manuales registradas</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = rides.map(ride => `
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-info">
+                            <div class="item-name">ID: ${ride.rideId || ride.id}</div>
+                            <div class="item-details">
+                                📞 Teléfono: ${ride.phone || 'N/A'}<br>
+                                🚗 Origen: ${ride.origin?.address || 'N/A'}<br>
+                                📍 Destino: ${ride.destination?.address || 'N/A'}<br>
+                                💰 Monto: Bs ${ride.fare?.toFixed(2) || '0.00'}<br>
+                                📊 Comisión: Bs ${ride.commission?.toFixed(2) || '0.00'}<br>
+                                👨‍✈️ Ganancias Conductor: Bs ${ride.driverEarnings?.toFixed(2) || '0.00'}<br>
+                                📅 Fecha: ${new Date(ride.createdAt).toLocaleString('es-ES')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         initMap();
         loadSystemSettings();
         loadSystemConfig();
         loadZones();
+        loadManualRides();
     </script>
 </body>
 </html>
