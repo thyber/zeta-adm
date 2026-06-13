@@ -1309,9 +1309,16 @@
                 
                 <!-- Map for Polygon -->
                 <h4 style="margin-top: 24px; margin-bottom: 12px;">🗺️ Dibujar Área de la Zona (polígono)</h4>
-                <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">Haz clic en el mapa para agregar puntos. Doble clic para finalizar el polígono.</p>
+                <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">
+                    📌 <strong>Instrucciones:</strong><br>
+                    • Haz clic en el mapa para agregar vértices del polígono<br>
+                    • Agrega al menos 3 puntos para cerrar el polígono<br>
+                    • Haz clic en "Deshacer" para quitar el último punto<br>
+                    • El polígono se cierra automáticamente
+                </p>
                 <div id="zoneMap" style="height: 400px; border-radius: 12px; margin-bottom: 16px;"></div>
                 <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <button class="btn btn-secondary" onclick="undoLastPoint()">↩️ Deshacer Último Punto</button>
                     <button class="btn btn-secondary" onclick="clearZonePolygon()">🔄 Limpiar Polígono</button>
                 </div>
                 
@@ -3597,6 +3604,7 @@
         let zoneMap = null;
         let zonePolygon = null;
         let zonePolygonPoints = [];
+        let allZonePolygons = []; // Para guardar todos los polígonos de zonas
         let zones = new Map();
         let systemConfig = {};
 
@@ -3611,6 +3619,31 @@
 
             zoneMap.on('click', function(e) {
                 addPointToZonePolygon(e.latlng);
+            });
+
+            // Renderizar todas las zonas existentes en el mapa
+            renderAllZonesOnMap();
+        }
+
+        function renderAllZonesOnMap() {
+            // Eliminar polígonos anteriores
+            allZonePolygons.forEach(poly => zoneMap.removeLayer(poly));
+            allZonePolygons = [];
+
+            // Dibujar todas las zonas
+            zones.forEach((zone, zoneId) => {
+                const coords = (zone.coordinates || []).map(c => [c.lat, c.lng]);
+                if (coords.length > 0) {
+                    const poly = L.polygon(coords, {
+                        color: zoneId === document.getElementById('zoneId').value ? '#10b981' : '#6b7280',
+                        fillColor: zoneId === document.getElementById('zoneId').value ? '#10b981' : '#6b7280',
+                        fillOpacity: 0.2,
+                        weight: 2
+                    }).addTo(zoneMap);
+                    
+                    poly.bindPopup(`<strong>${zone.name}</strong><br>ID: ${zoneId}`);
+                    allZonePolygons.push(poly);
+                }
             });
         }
 
@@ -3639,6 +3672,15 @@
                 zoneMap.removeLayer(zonePolygon);
                 zonePolygon = null;
             }
+            renderAllZonesOnMap();
+        }
+
+        function undoLastPoint() {
+            if (zonePolygonPoints.length > 0) {
+                zonePolygonPoints.pop();
+            }
+            updateZonePolygon();
+            renderAllZonesOnMap();
         }
 
         function resetZoneForm() {
@@ -3866,6 +3908,8 @@
                 .then(() => {
                     alert('✅ Zona guardada exitosamente!');
                     resetZoneForm();
+                    // Recargar zonas y renderizarlas
+                    loadZones();
                 })
                 .catch(err => {
                     console.error('Error al guardar zona:', err);
@@ -3920,6 +3964,12 @@
 
             zonePolygonPoints = (zone.coordinates || []).map(c => [c.lat, c.lng]);
             updateZonePolygon();
+            
+            // Renderizar todas las zonas y centrar en la zona editada
+            renderAllZonesOnMap();
+            if (zonePolygon && zoneMap) {
+                zoneMap.fitBounds(zonePolygon.getBounds());
+            }
         }
 
         function deleteZone(zoneId) {
