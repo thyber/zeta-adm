@@ -1315,14 +1315,9 @@
                     <button class="btn btn-secondary" onclick="clearZonePolygon()">🔄 Limpiar Polígono</button>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between;">
-                    <div>
-                        <button class="btn btn-info" onclick="testFirebase()">🔧 Prueba Conexión Firebase</button>
-                    </div>
-                    <div>
-                        <button class="btn btn-danger" onclick="resetZoneForm()">❌ Cancelar</button>
-                        <button class="btn btn-primary" onclick="saveZone()" style="margin-left: 12px;">💾 Guardar Zona</button>
-                    </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button class="btn btn-danger" onclick="resetZoneForm()">❌ Cancelar</button>
+                    <button class="btn btn-primary" onclick="saveZone()" style="margin-left: 12px;">💾 Guardar Zona</button>
                 </div>
             </div>
             
@@ -1351,7 +1346,10 @@
             
             <!-- Zones List -->
             <div class="section">
-                <h3>📋 Lista de Zonas</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3>📋 Lista de Zonas</h3>
+                    <button class="btn btn-info" onclick="loadZones()">🔄 Recargar Zonas</button>
+                </div>
                 <div class="list-container" id="zonesList"></div>
             </div>
 
@@ -1666,6 +1664,7 @@
 
             if (page === 'zones') {
                 setTimeout(initZoneMap, 100);
+                setTimeout(renderZones, 150);
             } else if (page === 'map' && map) {
                 setTimeout(() => map.invalidateSize(), 100);
             } else if (page === 'settings') {
@@ -3665,41 +3664,6 @@
             clearZonePolygon();
         }
 
-        function testFirebase() {
-            console.log('=== Prueba de conexión Firebase ===');
-            
-            const testRef = database.ref('test_zone');
-            const testData = {
-                id: 'test',
-                name: 'Zona de Prueba',
-                department: 'Santa Cruz',
-                municipality: 'Santa Cruz',
-                commission: 0.10,
-                tariffs: {
-                    auto: { baseFare: 10, perKmRate: 3, perMinRate: 0.5 }
-                },
-                updatedAt: Date.now()
-            };
-            
-            console.log('Intentando guardar:', testData);
-            
-            testRef.set(testData)
-                .then(() => {
-                    console.log('✅ Prueba guardada correctamente!');
-                    alert('✅ Prueba guardada correctamente! Revisa la consola.');
-                    
-                    // Leer para verificar
-                    return testRef.once('value');
-                })
-                .then((snap) => {
-                    console.log('✅ Datos leídos:', snap.val());
-                })
-                .catch((error) => {
-                    console.error('❌ Error en prueba:', error);
-                    alert('❌ Error: ' + error.message);
-                });
-        }
-
         function loadSystemConfig() {
             database.ref('systemConfig').once('value', (snapshot) => {
                 systemConfig = snapshot.val() || {};
@@ -3783,6 +3747,8 @@
 
         function renderZones() {
             const list = document.getElementById('zonesList');
+            if (!list) return; // No estamos en la página de zonas, salir
+            
             const filterDept = document.getElementById('filterDepartment').value;
             const filterMuni = document.getElementById('filterMunicipality').value;
 
