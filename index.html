@@ -3670,13 +3670,20 @@
         }
 
         function loadZones() {
+            console.log('Cargando zonas desde Firebase...');
             database.ref('zones').on('value', (snapshot) => {
+                console.log('Datos de zonas recibidos:', snapshot.val());
                 zones.clear();
                 snapshot.forEach(child => {
+                    console.log('Zona:', child.key, child.val());
                     zones.set(child.key, child.val());
                 });
+                console.log('Total de zonas cargadas:', zones.size);
                 updateFilters();
                 renderZones();
+            }, (error) => {
+                console.error('Error al cargar zonas:', error);
+                alert('❌ Error al cargar zonas: ' + error.message);
             });
         }
 
