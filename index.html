@@ -1646,28 +1646,30 @@
             }).addTo(map);
         }
         
-        function showPage(pageId) {
+        function showPage(page) {
             document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
             
-            document.getElementById('page-' + pageId).classList.add('active');
-            document.querySelector('.menu-item[data-page="' + pageId + '"]').classList.add('active');
-            
-            if (pageId === 'map' && map) {
+            document.getElementById('page-' + page).classList.add('active');
+            document.querySelector('[data-page="' + page + '"]').classList.add('active');
+
+            if (page === 'zones') {
+                setTimeout(initZoneMap, 100);
+            } else if (page === 'map' && map) {
                 setTimeout(() => map.invalidateSize(), 100);
-            } else if (pageId === 'settings') {
+            } else if (page === 'settings') {
                 loadSystemSettings();
-            } else if (pageId === 'manual-ride') {
-            initManualRideMap();
-        } else if (pageId === 'app-versions') {
-            loadAppVersions();
-        } else if (pageId === 'notifications') {
-            loadNotifications();
-        } else if (pageId === 'whatsapp-requests') {
-            loadWhatsAppRequests();
-        } else if (pageId === 'recharges') {
-            loadRechargeCodes();
-        }
+            } else if (page === 'manual-ride') {
+                initManualRideMap();
+            } else if (page === 'app-versions') {
+                loadAppVersions();
+            } else if (page === 'notifications') {
+                loadNotifications();
+            } else if (page === 'whatsapp-requests') {
+                loadWhatsAppRequests();
+            } else if (page === 'recharges') {
+                loadRechargeCodes();
+            }
         }
         
         function loadAppVersions() {
@@ -3757,32 +3759,40 @@
                 return;
             }
 
+            // Función helper para obtener valor numérico o valor predeterminado
+            const getNum = (id, defaultValue) => {
+                const val = parseFloat(document.getElementById(id).value);
+                return isNaN(val) ? defaultValue : val;
+            };
+
             const zoneData = {
                 id: zoneId,
                 name: document.getElementById('zoneName').value.trim(),
                 department: document.getElementById('zoneDepartment').value.trim(),
                 municipality: document.getElementById('zoneMunicipality').value.trim(),
-                commission: parseFloat(document.getElementById('zoneCommission').value) / 100,
+                commission: getNum('zoneCommission', 10) / 100,
                 tariffs: {
                     moto: {
-                        baseFare: parseFloat(document.getElementById('zoneMotoBaseFare').value),
-                        perKmRate: parseFloat(document.getElementById('zoneMotoPerKm').value),
-                        perMinRate: parseFloat(document.getElementById('zoneMotoPerMin').value)
+                        baseFare: getNum('zoneMotoBaseFare', 7),
+                        perKmRate: getNum('zoneMotoPerKm', 2.1),
+                        perMinRate: getNum('zoneMotoPerMin', 0.35)
                     },
                     auto: {
-                        baseFare: parseFloat(document.getElementById('zoneAutoBaseFare').value),
-                        perKmRate: parseFloat(document.getElementById('zoneAutoPerKm').value),
-                        perMinRate: parseFloat(document.getElementById('zoneAutoPerMin').value)
+                        baseFare: getNum('zoneAutoBaseFare', 10),
+                        perKmRate: getNum('zoneAutoPerKm', 3),
+                        perMinRate: getNum('zoneAutoPerMin', 0.5)
                     },
                     vagoneta: {
-                        baseFare: parseFloat(document.getElementById('zoneVagonetaBaseFare').value),
-                        perKmRate: parseFloat(document.getElementById('zoneVagonetaPerKm').value),
-                        perMinRate: parseFloat(document.getElementById('zoneVagonetaPerMin').value)
+                        baseFare: getNum('zoneVagonetaBaseFare', 13),
+                        perKmRate: getNum('zoneVagonetaPerKm', 3.9),
+                        perMinRate: getNum('zoneVagonetaPerMin', 0.65)
                     }
                 },
                 coordinates: zonePolygonPoints.map(p => ({ lat: p[0], lng: p[1] })),
                 updatedAt: Date.now()
             };
+
+            console.log('Guardando zona:', zoneData);
 
             database.ref('zones/' + zoneId).set(zoneData)
                 .then(() => {
@@ -3790,6 +3800,7 @@
                     resetZoneForm();
                 })
                 .catch(err => {
+                    console.error('Error al guardar zona:', err);
                     alert('❌ Error al guardar zona: ' + err.message);
                 });
         }
@@ -3830,23 +3841,6 @@
                     .catch(err => {
                         alert('❌ Error: ' + err.message);
                     });
-            }
-        }
-
-        function showPage(page) {
-            document.querySelectorAll('.page-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            document.querySelectorAll('.menu-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            document.getElementById('page-' + page).classList.add('active');
-            document.querySelector('[data-page="' + page + '"]').classList.add('active');
-
-            if (page === 'zones') {
-                setTimeout(initZoneMap, 100);
             }
         }
 
